@@ -114,7 +114,21 @@ public class BitDecoder {
         Map<String, Object> dictionary = new HashMap<>();
 
         for (;;) {
-            String key = new String(decodeBytes(in).array(), "UTF-8"); // key is always string.
+            int prevLoad = in.read();
+            if (prevLoad == 'e') { // end of map
+                break;
+            }
+
+            if (prevLoad < '0' || prevLoad > '9') {
+                throw new InvalidKeyException("Dictionary key must be string, but [" + (char)prevLoad + "]");
+            }
+
+            ByteBuffer keyBuffer = decodeBytes(in, prevLoad);
+            if (keyBuffer == null) {
+                throw new IOException("Failed to decode key");
+            }
+
+            String key = new String(keyBuffer.array(), "UTF-8"); // key is always string.
             if (key.length() == 0) {
                 break;
             }
@@ -166,6 +180,9 @@ public class BitDecoder {
 
         int temp;
         while ((temp = in.read()) != ':') {
+            if (temp == -1) { // reach end of file
+                throw new IOException("We've met end of file");
+            }
             lengthBuffer.write(temp);
         }
 
