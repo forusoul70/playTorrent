@@ -76,6 +76,25 @@ public class BitDecoder {
         return null;
     }
 
+    public byte[] getByteArray(@NonNull String key) {
+        if (infoMaps == null || infoMaps.isEmpty()) {
+            if (DEBUG) {
+                Log.e(TAG, "getString(), info map is empty");
+            }
+            return null;
+        }
+
+        Object value = infoMaps.get(key);
+        if (value == null || value instanceof ByteBuffer == false) {
+            if (DEBUG) {
+                Log.e(TAG, "Failed to get string by [" + key + "]");
+            }
+            return null;
+        }
+
+        return ((ByteBuffer)value).array();
+    }
+
     private void decode() throws IOException, InvalidKeyException {
         int type = this.in.read();
         if (type != 'd') {
