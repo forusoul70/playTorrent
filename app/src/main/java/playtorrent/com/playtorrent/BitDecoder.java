@@ -1,6 +1,7 @@
 package playtorrent.com.playtorrent;
 
 import android.support.annotation.NonNull;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
@@ -12,6 +13,7 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
+import java.security.acl.LastOwnerException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -93,6 +95,56 @@ public class BitDecoder {
         }
 
         return ((ByteBuffer)value).array();
+    }
+
+    public Map<String, Object> getDictionary(@NonNull String key) {
+        if (infoMaps == null || infoMaps.isEmpty()) {
+            if (DEBUG) {
+                Log.e(TAG, "getString(), info map is empty");
+            }
+            return null;
+        }
+
+        if (TextUtils.isEmpty(key)) {
+            if (DEBUG) {
+                Log.e(TAG, "getDictionary(), Input key is empty");
+            }
+        }
+
+        Object value = infoMaps.get(key);
+        if (value == null || value instanceof Map == false) {
+            if (DEBUG) {
+                Log.e(TAG, "Failed to get string by [" + key + "]");
+            }
+            return null;
+        }
+
+        return (Map<String, Object>)value;
+    }
+
+    public ArrayList<Object> getList(@NonNull String key) {
+        if (infoMaps == null || infoMaps.isEmpty()) {
+            if (DEBUG) {
+                Log.e(TAG, "getString(), info map is empty");
+            }
+            return null;
+        }
+
+        if (TextUtils.isEmpty(key)) {
+            if (DEBUG) {
+                Log.e(TAG, "getDictionary(), Input key is empty");
+            }
+        }
+
+        Object value = infoMaps.get(key);
+        if (value == null || value instanceof ArrayList == false) {
+            if (DEBUG) {
+                Log.e(TAG, "Failed to get string by [" + key + "]");
+            }
+            return null;
+        }
+
+        return (ArrayList<Object>)value;
     }
 
     private void decode() throws IOException, InvalidKeyException {
