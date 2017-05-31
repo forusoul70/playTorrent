@@ -13,18 +13,18 @@ import java.util.ArrayList;
 import java.util.Map;
 
 /**
- * Torrent TorrentClient
+ * Torrent Torrent
  */
 
-public class TorrentClient {
+public class Torrent {
     private static final boolean DEBUG = BuildConfig.DEBUG;
-    private static final String TAG = "TorrentClient";
+    private static final String TAG = "Torrent";
 
     private byte[] mInfoHash = null;
     private final ArrayList<String> mTrackerList = new ArrayList<>();
 
-    public static TorrentClient createFromInputStream(InputStream in) {
-        TorrentClient client = null;
+    public static Torrent createFromInputStream(InputStream in) {
+        Torrent client = null;
         try {
             BitDecoder decoder = BitDecoder.fromInputStream(in);
             Map<String, Object> infoMap = decoder.getDictionary("info");
@@ -69,7 +69,7 @@ public class TorrentClient {
                 trackerList.add(tracker);
             }
 
-            client = new TorrentClient(infoHash, trackerList);
+            client = new Torrent(infoHash, trackerList);
         } catch (Exception e) {
             if (DEBUG) {
                 Log.e(TAG, "createFromInputStream(), failed decode", e);
@@ -101,7 +101,7 @@ public class TorrentClient {
         return stringArrayList;
     }
 
-    private TorrentClient(@NonNull byte[] infoHash, @NonNull ArrayList<String> tackerList) {
+    private Torrent(@NonNull byte[] infoHash, @NonNull ArrayList<String> tackerList) {
         mInfoHash = infoHash;
         mTrackerList.addAll(tackerList);
     }

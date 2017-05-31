@@ -18,11 +18,11 @@ import static org.junit.Assert.assertTrue;
  */
 
 @RunWith(AndroidJUnit4.class)
-public class TestTorrentClient {
+public class TestTorrent {
     @Test
     public void testInitTorrentByFile() throws IOException, InvalidKeyException {
         Context appContext = InstrumentationRegistry.getTargetContext();
-        TorrentClient client = TorrentClient.createFromInputStream(appContext.getAssets().open("ubuntu-17.04-desktop-amd64.iso.torrent"));
+        Torrent client = Torrent.createFromInputStream(appContext.getAssets().open("ubuntu-17.04-desktop-amd64.iso.torrent"));
 
         assertEquals(2, client.getTrackerList().size());
     }
