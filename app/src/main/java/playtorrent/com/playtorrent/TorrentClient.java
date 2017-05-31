@@ -16,7 +16,7 @@ public class TorrentClient {
         TorrentClient client = new TorrentClient();
         try {
             BitDecoder decoder = BitDecoder.fromInputStream(in);
-
+            mInfoHash = decoder.getByteArray("info_hash");
 
         } catch (Exception e) {
 
