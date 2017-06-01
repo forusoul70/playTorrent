@@ -59,7 +59,6 @@ public class DownloadPeer {
             return;
         }
 
-        infoHash = CipherUtils.sha1(infoHash);
         String encodingCharset = "ISO-8859-1"; // keep origin bytes
         for (String tracker : trackerList) {
             StringBuilder urlBuilder = new StringBuilder(tracker);
@@ -67,11 +66,11 @@ public class DownloadPeer {
                 urlBuilder.append(tracker.contains("?") ? "&" : "?")
                         .append("info_hash=").append(URLEncoder.encode(new String(infoHash, encodingCharset), encodingCharset))
                         .append("&peer_id=").append(URLEncoder.encode(new String(getPeerId().getBytes(), encodingCharset), encodingCharset))
-                        .append("&peer_id=").append(URLEncoder.encode(new String(getPeerId().getBytes(), encodingCharset), encodingCharset))
                         .append("&port=").append(49152)
-                        .append("&upload=").append(0)
+                        .append("&uploaded=").append(0)
                         .append("&downloaded=").append(0)
                         .append("&left=").append(mTorrent.getFileLength())
+                        .append("&compact=").append(1)
                         .append("&event=started");
 
                 BufferedInputStream in = null;
@@ -86,8 +85,6 @@ public class DownloadPeer {
                     while ((readCount = in.read(buffer)) > 0) {
                         out.write(buffer, 0, readCount);
                     }
-
-                    Log.e(TAG, "GET tracker : " + new String(out.toByteArray()));
                 } catch (MalformedURLException e) {
                     if (DEBUG) {
                         Log.e(TAG, "findTracker(), Failed to build tracker url", e);
@@ -107,8 +104,6 @@ public class DownloadPeer {
                         }
                     }
                 }
-
-
             } catch (UnsupportedEncodingException e) {
                 if (DEBUG) {
                     Log.e(TAG, "findTracker() failed", e);
