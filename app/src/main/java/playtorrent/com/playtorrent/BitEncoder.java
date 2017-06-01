@@ -56,19 +56,17 @@ public class BitEncoder {
     }
 
     private void encodeMap(@NonNull OutputStream out, @NonNull Map<String, Object> map) throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        outputStream.write('d'); // start dictionary
+        out.write('d'); // start dictionary
 
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
             if (TextUtils.isEmpty(key) == false || value != null) {
                 encodeString(out, key);
-                out.write(':');
                 encodeNext(out, value);
             }
         }
-        outputStream.write('e'); // end
+        out.write('e'); // end
     }
 
 

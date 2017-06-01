@@ -1,7 +1,6 @@
 package playtorrent.com.playtorrent;
 
 import android.support.annotation.NonNull;
-import android.support.annotation.VisibleForTesting;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -21,6 +20,7 @@ public class Torrent {
     private static final String TAG = "Torrent";
 
     private byte[] mInfoHash = null;
+    private int mFileLength = 0;
     private final ArrayList<String> mTrackerList = new ArrayList<>();
 
     public static Torrent createFromInputStream(InputStream in) {
@@ -69,13 +69,33 @@ public class Torrent {
                 trackerList.add(tracker);
             }
 
-            client = new Torrent(infoHash, trackerList);
+            // int file size
+            Object length = infoMap.get("length");
+            if (length == null || length instanceof Integer == false) {
+                if (DEBUG) {
+                    Log.e(TAG, "createFromInputStream(), failed to get torrent length");
+                }
+                return null;
+            }
+            client = new Torrent(infoHash, trackerList, (Integer) length);
         } catch (Exception e) {
             if (DEBUG) {
                 Log.e(TAG, "createFromInputStream(), failed decode", e);
             }
         }
         return client;
+    }
+
+    public ArrayList<String> getTrackerList() {
+        return mTrackerList;
+    }
+
+    public byte[] getInfoHash() {
+        return mInfoHash;
+    }
+
+    public int getFileLength() {
+        return mFileLength;
     }
 
     private static ArrayList<String> convertStringFromObject(Object value) throws InvalidClassException, UnsupportedEncodingException {
@@ -101,13 +121,9 @@ public class Torrent {
         return stringArrayList;
     }
 
-    private Torrent(@NonNull byte[] infoHash, @NonNull ArrayList<String> tackerList) {
+    private Torrent(@NonNull byte[] infoHash, @NonNull ArrayList<String> tackerList, int length) {
         mInfoHash = infoHash;
+        mFileLength = length;
         mTrackerList.addAll(tackerList);
-    }
-
-    @VisibleForTesting
-    public ArrayList<String> getTrackerList() {
-        return mTrackerList;
     }
 }

@@ -17,6 +17,8 @@ import java.security.acl.LastOwnerException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * Bit decoder
@@ -182,7 +184,7 @@ public class BitDecoder {
     }
 
     private Map<String, Object> decodeDictionary(@NonNull InputStream in) throws IOException, InvalidKeyException {
-        Map<String, Object> dictionary = new HashMap<>();
+        Map<String, Object> dictionary = new TreeMap<>();
 
         for (;;) {
             int prevLoad = in.read();
