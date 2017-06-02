@@ -2,6 +2,8 @@ package playtorrent.com.playtorrent;
 
 import android.net.Uri;
 import android.support.annotation.NonNull;
+import android.support.v4.view.animation.LinearOutSlowInInterpolator;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
@@ -10,11 +12,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.security.InvalidKeyException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -73,40 +83,75 @@ public class DownloadPeer {
                         .append("&compact=").append(1)
                         .append("&event=started");
 
-                BufferedInputStream in = null;
                 try {
                     URL url = new URL(urlBuilder.toString());
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    in = new BufferedInputStream(connection.getInputStream());
-
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    int readCount = -1;
-                    byte[] buffer = new byte[1024];
-                    while ((readCount = in.read(buffer)) > 0) {
-                        out.write(buffer, 0, readCount);
-                    }
-                } catch (MalformedURLException e) {
+                    BitDecoder decoder = BitDecoder.fromInputStream(new BufferedInputStream(connection.getInputStream())); // auto close input stream
+                    handleResponseTracker(decoder);
+                } catch (MalformedURLException | InvalidKeyException e ) {
                     if (DEBUG) {
                         Log.e(TAG, "findTracker(), Failed to build tracker url", e);
                     }
-                    return;
                 } catch (IOException e) {
                     if (DEBUG) {
                         Log.e(TAG, "findTracker(), failed to make connection", e);
                     }
-                    return;
                 } finally {
-                    if (in != null) {
-                        try {
-                            in.close();
-                        } catch (IOException ignore) {
 
-                        }
-                    }
                 }
             } catch (UnsupportedEncodingException e) {
                 if (DEBUG) {
                     Log.e(TAG, "findTracker() failed", e);
+                }
+            }
+        }
+    }
+
+    private void handleResponseTracker(BitDecoder decodedResponse) {
+        if (decodedResponse == null) {
+            if (DEBUG) {
+                Log.e(TAG, "handleResponseTracker(), Input decoder is null");
+            }
+            return;
+        }
+
+        // check failed
+        String failedReason = decodedResponse.getString("failure reason");
+        if (TextUtils.isEmpty(failedReason) == false) {
+            if (DEBUG) {
+                Log.e(TAG, "handleResponseTracker(), Tracker request failed, reason is " + failedReason);
+            }
+            return;
+        }
+
+        byte[] peers = decodedResponse.getByteArray("peers");
+        if (ValidationUtils.isEmptyArray(peers)) {
+            if (DEBUG) {
+                Log.e(TAG, "handleResponseTracker(), Failed to find peer");
+            }
+            return;
+        }
+
+        if (peers.length % 6 != 0) {
+            if (DEBUG) {
+                Log.e(TAG, "invalid peers format");
+            }
+            return;
+        }
+
+        ByteBuffer peerBuffer = ByteBuffer.wrap(peers);
+        int peersLength = peers.length / 6;
+        for (int i = 0; i < peersLength; i++) {
+            byte[] ipBytes = new byte[4];
+            peerBuffer.get(ipBytes);
+            try {
+                InetAddress ip = InetAddress.getByAddress(ipBytes);
+                int port = (0xFF & (int)peerBuffer.get()) << 8 | (0xFF & (int)peerBuffer.get());
+
+                Log.i("YYY", "pared peer = " + ip.toString());
+            } catch (UnknownHostException e) {
+                if (DEBUG) {
+                    Log.e(TAG, "handleResponseTracker(), UnknownHostException occurred", e);
                 }
             }
         }
