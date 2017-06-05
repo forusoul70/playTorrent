@@ -1,44 +1,40 @@
 package playtorrent.com.playtorrent;
 
-import android.net.Uri;
 import android.support.annotation.NonNull;
-import android.support.v4.view.animation.LinearOutSlowInInterpolator;
 import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Download peer
  */
 
-public class DownloadPeer {
+public class DownloadProcessor {
     private static final boolean DEBUG = BuildConfig.DEBUG;
-    private static final String TAG = "DownloadPeer";
+    private static final String TAG = "DownloadProcessor";
 
     private final Torrent mTorrent;
     private final String mPeerId;
 
-    public DownloadPeer(@NonNull Torrent torrent) {
+    private final ConcurrentHashMap<String, Peer> mPeerMap = new ConcurrentHashMap<>();
+
+    public DownloadProcessor(@NonNull Torrent torrent) {
         mTorrent = torrent;
         String uuid[] = UUID.randomUUID().toString().split("-");
         mPeerId = uuid[0] + uuid[1] + uuid[2] + uuid[3]; // length 20;
@@ -148,12 +144,39 @@ public class DownloadPeer {
                 InetAddress ip = InetAddress.getByAddress(ipBytes);
                 int port = (0xFF & (int)peerBuffer.get()) << 8 | (0xFF & (int)peerBuffer.get());
 
-                Log.i("YYY", "pared peer = " + ip.toString());
+                try {
+                    Peer downloadPeer = new Peer(ip.getHostAddress(), port);
+                    mPeerMap.put(ip.getHostAddress(), downloadPeer);
+                } catch (ConnectException e) {
+                    if (DEBUG) {
+                        Log.e(TAG, "handleResponseTracker(), Failed to create connection");
+                    }
+                }
+
             } catch (UnknownHostException e) {
                 if (DEBUG) {
                     Log.e(TAG, "handleResponseTracker(), UnknownHostException occurred", e);
                 }
             }
+        }
+
+        if (mPeerMap.isEmpty() == false) {
+            handFoundPeerList();
+        }
+    }
+
+    private void handFoundPeerList() {
+        if (mPeerMap.isEmpty()) {
+            if (DEBUG) {
+                Log.e(TAG, "handFoundPeerList(), Current peer list is empty");
+            }
+            return;
+        }
+
+        for (Map.Entry<String, Peer> entry : mPeerMap.entrySet()) {
+            Peer downloadPeer = entry.getValue();
+            downloadPeer.connect();
+            break;
         }
     }
 }
