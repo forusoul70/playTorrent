@@ -27,33 +27,33 @@ private:
 
 // mapping class <java, cpp>
 struct JavaObjectHasher {
-    std::size_t operator()(const uint64_t& key) const
+    std::size_t operator()(const int& key) const
     {
         return (size_t) key;
     }
 };
-static std::unordered_map<uint64_t , PlayTorrent::Connection*, JavaObjectHasher> sConnectionMap;
+static std::unordered_map<int , PlayTorrent::Connection*, JavaObjectHasher> sConnectionMap;
 
 extern "C"
-JNIEXPORT jlong JNICALL
+JNIEXPORT jint JNICALL
 Java_playtorrent_com_playtorrent_Connection_requestCreate(JNIEnv *env, jobject instance, jobject connection, jobject callback) {
 
     PlayTorrent::Connection* nativeConnection = new PlayTorrent::Connection();
-    sConnectionMap.insert(std::make_pair((uint64_t)nativeConnection, nativeConnection));
+    sConnectionMap.insert(std::make_pair(nativeConnection->getId(), nativeConnection));
 
     // create callback wrapper
-    JavaConnectionCallback* callbackWrapper = new JavaConnectionCallback(env, callback);
+    JavaConnectionCallback* callbackWrapper = new JavaConnectionCallback(env, env->NewGlobalRef(callback));
     nativeConnection->setConnectionCallback(callbackWrapper);
-
-    return (jlong) nativeConnection;
+    return nativeConnection->getId();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_playtorrent_com_playtorrent_Connection_requestConnect(JNIEnv *env, jobject instance, jlong pointer) {
+Java_playtorrent_com_playtorrent_Connection_requestConnect(JNIEnv *env, jobject instance, jint id) {
+
     PlayTorrent::Connection* connection = nullptr;
     try {
-        connection = sConnectionMap.at((uint64_t)pointer);
+        connection = sConnectionMap.at(id);
     } catch (std::out_of_range ignore) {
 
     }

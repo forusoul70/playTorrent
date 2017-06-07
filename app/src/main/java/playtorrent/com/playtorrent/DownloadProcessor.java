@@ -147,6 +147,7 @@ public class DownloadProcessor {
                 try {
                     Peer downloadPeer = new Peer(ip.getHostAddress(), port);
                     mPeerMap.put(ip.getHostAddress(), downloadPeer);
+                    break;
                 } catch (ConnectException e) {
                     if (DEBUG) {
                         Log.e(TAG, "handleResponseTracker(), Failed to create connection");

@@ -19,8 +19,10 @@ namespace PlayTorrent {
         void requestConnect();
         virtual ~Connection();
 
+        inline int getId() {return mId;}
         void setConnectionCallback(ConnectionCallback* callback);
     private:
+        int mId;
         std::shared_ptr<ConnectionCallback> mCallback;
     };
 }

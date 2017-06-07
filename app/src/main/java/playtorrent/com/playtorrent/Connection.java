@@ -17,7 +17,7 @@ public class Connection {
     private final String mHost;
     private final int mPort;
     private final ConnectionCallback mConnectionCallback;
-    private long mNativePointer = -1L;
+    private int mNativeConnectionInstanceId = -1;
 
     public static Connection fromAddress(String host, int port) {
         if (TextUtils.isEmpty(host) || port < 0) {
@@ -37,17 +37,17 @@ public class Connection {
 
             }
         };
-        mNativePointer = requestCreate(this, mConnectionCallback);
+        mNativeConnectionInstanceId = requestCreate(this, mConnectionCallback);
     }
 
     public void connect() {
-        requestConnect(mNativePointer);
+        requestConnect(mNativeConnectionInstanceId);
     }
 
     private interface ConnectionCallback {
         public void onConnected();
     }
 
-    private native long requestCreate(@NonNull Connection connection, @NonNull ConnectionCallback callback);
-    private native void requestConnect(long pointer);
+    private native int requestCreate(@NonNull Connection connection, @NonNull ConnectionCallback callback);
+    private native void requestConnect(int id);
 }
