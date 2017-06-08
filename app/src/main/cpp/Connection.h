@@ -6,6 +6,7 @@
 #define PLAYTORRENT_CONNECTION_H
 
 #include <memory>
+#include <sys/epoll.h>
 
 namespace PlayTorrent {
     class ConnectionCallback {
@@ -24,6 +25,11 @@ namespace PlayTorrent {
     private:
         int mId;
         std::shared_ptr<ConnectionCallback> mCallback;
+
+        // poll event
+        int mPollFd;
+        int mSendRequestEvent;
+        struct epoll_event *mEventPollBuffer;
     };
 }
 
