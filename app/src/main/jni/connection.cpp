@@ -40,7 +40,7 @@ static std::unordered_map<int , PlayTorrent::Connection*, JavaObjectHasher> sCon
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_playtorrent_com_playtorrent_Connection_requestCreate(JNIEnv *env, jobject instance, jobject connection, jobject callback) {
+Java_playtorrent_com_playtorrent_Connection_requestCreate(JNIEnv *env, jobject instance, jobject callback) {
 
     PlayTorrent::Connection* nativeConnection = new PlayTorrent::Connection();
     sConnectionMap.insert(std::make_pair(nativeConnection->getId(), nativeConnection));
@@ -59,7 +59,6 @@ Java_playtorrent_com_playtorrent_Connection_requestConnect(JNIEnv *env, jobject 
     try {
         connection = sConnectionMap.at(id);
     } catch (std::out_of_range ignore) {
-
     }
 
     if (connection == nullptr) {
@@ -69,4 +68,23 @@ Java_playtorrent_com_playtorrent_Connection_requestConnect(JNIEnv *env, jobject 
 
     connection->requestConnect(std::string(host), port);
     env->ReleaseStringUTFChars(host_, host);
+}extern "C"
+JNIEXPORT void JNICALL
+Java_playtorrent_com_playtorrent_Connection_requestSendMessage(JNIEnv *env, jobject instance, jint id, jbyteArray message_) {
+    jbyte *message = env->GetByteArrayElements(message_, NULL);
+
+    PlayTorrent::Connection* connection = nullptr;
+    try {
+        connection = sConnectionMap.at(id);
+    } catch (std::out_of_range ignore) {
+    }
+
+    if (connection == nullptr) {
+        LOGE(TAG, "Failed to find connection from memory map");
+        return;
+    }
+
+
+
+    env->ReleaseByteArrayElements(message_, message, 0);
 }

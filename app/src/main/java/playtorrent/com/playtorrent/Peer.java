@@ -1,5 +1,7 @@
 package playtorrent.com.playtorrent;
 
+import android.support.annotation.NonNull;
+
 import java.net.ConnectException;
 
 /**
@@ -20,5 +22,9 @@ public class Peer {
 
     public void connect() {
         mConnection.connect();
+    }
+
+    public void sendMessage(@NonNull IBitMessage message) {
+
     }
 }

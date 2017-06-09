@@ -8,6 +8,8 @@
 #include <memory>
 #include <sys/epoll.h>
 #include <mutex>
+#include <deque>
+#include <pthread.h>
 
 namespace PlayTorrent {
     class ConnectionCallback {
@@ -23,6 +25,7 @@ namespace PlayTorrent {
 
         inline int getId() {return mId;}
         void setConnectionCallback(ConnectionCallback* callback);
+        void requestSendMessage(std::shared_ptr<uint8_t*> message, int size);
     private:
         int mId;
         std::shared_ptr<ConnectionCallback> mCallback;
@@ -31,11 +34,16 @@ namespace PlayTorrent {
         int mPollFd;
         int mSendRequestEvent;
         struct epoll_event *mEventPollBuffer;
+        pthread_t mSelectLoopingThread;
 
         // Connection
         const std::mutex CONNECTION_LOCK;
         std::string mHost;
         int mPort;
+
+        // send buffer
+        const std::mutex SENDING_BUFFER_LOCK;
+        std::deque<std::shared_ptr<uint8_t*>> mSendMessageQueue;
     };
 }
 

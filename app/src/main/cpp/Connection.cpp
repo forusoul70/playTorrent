@@ -64,6 +64,15 @@ namespace PlayTorrent {
 
         // create event poll buffer
         mEventPollBuffer = new epoll_event[MAX_EVENT_COUNT]; // check memory issue?
+
+        // create select looping thread
+        auto lambdaOnThread = [](void* start_routine) -> void* {
+            Connection* connection = dynamic_cast<Connection*>(start_routine);
+            if (connection == nullptr) {
+                return nullptr;
+            }
+        };
+        pthread_create(&mSelectLoopingThread, nullptr, lambdaOnThread, this);
     }
 
     Connection::~Connection() {
@@ -99,6 +108,24 @@ namespace PlayTorrent {
 
     void Connection::setConnectionCallback(ConnectionCallback *callback) {
         mCallback = std::shared_ptr<ConnectionCallback>(callback);
+    }
+
+    void Connection::requestSendMessage(std::shared_ptr<uint8_t*> message, int size) {
+        if (message == nullptr || size <= 0) {
+            LOGE(TAG, "requestSendMessage(), invalid input parameters");
+            return;
+        }
+
+        if (mSendRequestEvent < 0) {
+            LOGE(TAG, "requestSendMessage(), Current poll event fd is empty");
+        }
+
+        // lock sending buffer
+        std::lock_guard<std::mutex> connectionLock(*const_cast<std::mutex*>(&SENDING_BUFFER_LOCK));
+        mSendMessageQueue.push_back(message);
+
+        // wake up
+        eventfd_write(mSendRequestEvent, 1);
     }
 }
 

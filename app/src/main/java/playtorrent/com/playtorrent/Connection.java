@@ -14,9 +14,20 @@ public class Connection {
     }
 
     private static final boolean DEBUG = BuildConfig.DEBUG;
+    private static final String TAG = "Connection";
+
+    private enum ConnectionState {
+        IDLE,
+        CONNECTED
+    }
 
     private final String mHost;
     private final int mPort;
+
+    private final Object mConnectionLock = new Object();
+    private ConnectionState mConnectionState = ConnectionState.IDLE;
+
+    // for native
     private final ConnectionCallback mConnectionCallback;
     private int mNativeConnectionInstanceId = -1;
 
@@ -35,20 +46,39 @@ public class Connection {
         mConnectionCallback = new ConnectionCallback() {
             @Override
             public void onConnected() {
-                Log.e("YYY", "onConnected");
+                synchronized (mConnectionLock) {
+                    mConnectionState = ConnectionState.CONNECTED;
+                }
             }
         };
-        mNativeConnectionInstanceId = requestCreate(this, mConnectionCallback);
+        mNativeConnectionInstanceId = requestCreate(mConnectionCallback);
     }
 
     public void connect() {
         requestConnect(mNativeConnectionInstanceId, mHost, mPort);
     }
 
+    public boolean isConnected() {
+        synchronized (mConnectionLock) {
+            return mConnectionState == ConnectionState.CONNECTED;
+        }
+    }
+
+    public void sendMessage(@NonNull byte[] message) {
+        if (isConnected() == false) {
+            if (DEBUG) {
+                Log.e(TAG, "Is not connected");
+            }
+            return;
+        }
+    }
+
+    // native code 관련
     private interface ConnectionCallback {
         public void onConnected();
     }
 
-    private native int requestCreate(@NonNull Connection connection, @NonNull ConnectionCallback callback);
+    private native int requestCreate(@NonNull ConnectionCallback callback);
     private native void requestConnect(int id, String host, int port);
+    private native void requestSendMessage(int id, byte[] message);
 }
