@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <sys/epoll.h>
+#include <mutex>
 
 namespace PlayTorrent {
     class ConnectionCallback {
@@ -17,7 +18,7 @@ namespace PlayTorrent {
     class Connection {
     public:
         Connection();
-        void requestConnect();
+        void requestConnect(std::string host, int port);
         virtual ~Connection();
 
         inline int getId() {return mId;}
@@ -30,6 +31,11 @@ namespace PlayTorrent {
         int mPollFd;
         int mSendRequestEvent;
         struct epoll_event *mEventPollBuffer;
+
+        // Connection
+        const std::mutex CONNECTION_LOCK;
+        std::string mHost;
+        int mPort;
     };
 }
 

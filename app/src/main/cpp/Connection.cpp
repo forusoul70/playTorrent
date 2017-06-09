@@ -2,11 +2,16 @@
 // Created by lee on 17. 6. 5.
 //
 
+#include <string>
+#include <sstream>
 #include <atomic>
-#include <climits>
 #include <sys/eventfd.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include "Connection.h"
 #include "Exception.h"
+#include "logging.h"
+#include "Utils.h"
 
 #define TAG "Connection"
 
@@ -20,6 +25,8 @@ namespace PlayTorrent {
     ,mPollFd(-1)
     ,mSendRequestEvent(-1)
     ,mEventPollBuffer(nullptr)
+    ,mHost("")
+    ,mPort(-1)
     {
         // generate id
         mId = ++sIDGenerator;
@@ -63,7 +70,28 @@ namespace PlayTorrent {
         
     }
 
-    void Connection::requestConnect() {
+    void Connection::requestConnect(std::string host, int port) {
+        if (host.empty() || port <= 0) {
+            LOGE(TAG, "Input host or port is invalid %s:%d", host.c_str(), port);
+            return;
+        }
+
+        // lock connection
+        std::lock_guard<std::mutex> connectionLock(*const_cast<std::mutex*>(&CONNECTION_LOCK));
+
+        // find host
+        struct addrinfo hint;
+        memset(&hint, 0, sizeof(addrinfo));
+        hint.ai_family = AF_INET;
+        hint.ai_socktype = SOCK_STREAM;
+
+        struct addrinfo *peer = nullptr;
+
+        if (getaddrinfo(host.c_str(), Utils::toString(port).c_str(), &hint, &peer) != 0) {
+            LOGE(TAG, "Failed to get address info %s:%d", host.c_str(), port);
+            return;
+        }
+
         if (mCallback != nullptr) {
             mCallback->onConnected();
         }

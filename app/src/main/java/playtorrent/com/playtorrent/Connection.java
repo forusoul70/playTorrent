@@ -2,6 +2,7 @@ package playtorrent.com.playtorrent;
 
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
+import android.util.Log;
 
 /**
  * Manage connection with peer
@@ -34,14 +35,14 @@ public class Connection {
         mConnectionCallback = new ConnectionCallback() {
             @Override
             public void onConnected() {
-
+                Log.e("YYY", "onConnected");
             }
         };
         mNativeConnectionInstanceId = requestCreate(this, mConnectionCallback);
     }
 
     public void connect() {
-        requestConnect(mNativeConnectionInstanceId);
+        requestConnect(mNativeConnectionInstanceId, mHost, mPort);
     }
 
     private interface ConnectionCallback {
@@ -49,5 +50,5 @@ public class Connection {
     }
 
     private native int requestCreate(@NonNull Connection connection, @NonNull ConnectionCallback callback);
-    private native void requestConnect(int id);
+    private native void requestConnect(int id, String host, int port);
 }

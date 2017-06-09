@@ -19,6 +19,10 @@ public:
         mEnv->CallVoidMethod(mJavaCallback, onConnectedMethod);
     }
 
+    virtual ~JavaConnectionCallback() {
+        mEnv->DeleteGlobalRef(mJavaCallback);
+    }
+
 private:
     JNIEnv *mEnv;
     jobject mJavaCallback;
@@ -49,8 +53,8 @@ Java_playtorrent_com_playtorrent_Connection_requestCreate(JNIEnv *env, jobject i
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_playtorrent_com_playtorrent_Connection_requestConnect(JNIEnv *env, jobject instance, jint id) {
-
+Java_playtorrent_com_playtorrent_Connection_requestConnect(JNIEnv *env, jobject instance, jint id, jstring host_, jint port) {
+    const char *host = env->GetStringUTFChars(host_, 0);
     PlayTorrent::Connection* connection = nullptr;
     try {
         connection = sConnectionMap.at(id);
@@ -63,5 +67,6 @@ Java_playtorrent_com_playtorrent_Connection_requestConnect(JNIEnv *env, jobject 
         return;
     }
 
-    connection->requestConnect();
+    connection->requestConnect(std::string(host), port);
+    env->ReleaseStringUTFChars(host_, host);
 }
