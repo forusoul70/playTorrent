@@ -72,6 +72,7 @@ Java_playtorrent_com_playtorrent_Connection_requestConnect(JNIEnv *env, jobject 
 JNIEXPORT void JNICALL
 Java_playtorrent_com_playtorrent_Connection_requestSendMessage(JNIEnv *env, jobject instance, jint id, jbyteArray message_) {
     jbyte *message = env->GetByteArrayElements(message_, NULL);
+    int length = env->GetArrayLength(message_);
 
     PlayTorrent::Connection* connection = nullptr;
     try {
@@ -84,7 +85,7 @@ Java_playtorrent_com_playtorrent_Connection_requestSendMessage(JNIEnv *env, jobj
         return;
     }
 
-
+    connection->requestSendMessage((uint8_t*)message, length);
 
     env->ReleaseByteArrayElements(message_, message, 0);
 }

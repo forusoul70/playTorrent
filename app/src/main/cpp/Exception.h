@@ -8,10 +8,10 @@
 #include <exception>
 #include <string>
 
-class UnExpectedException: public std::exception {
+class RuntimeException: public std::exception {
 
 public:
-    UnExpectedException(std::string message)
+    RuntimeException(std::string message)
     :mMessage(message){
 
     }
@@ -20,7 +20,7 @@ public:
         return mMessage.c_str();
     }
 
-    virtual ~UnExpectedException() _GLIBCXX_USE_NOEXCEPT {
+    virtual ~RuntimeException() _GLIBCXX_USE_NOEXCEPT {
         mMessage.clear();
     }
 private:

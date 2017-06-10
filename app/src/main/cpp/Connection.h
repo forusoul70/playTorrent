@@ -12,6 +12,33 @@
 #include <pthread.h>
 
 namespace PlayTorrent {
+    enum ConnectionState {
+        Idle,
+        Connected,
+        Connecting,
+        Suspended
+    };
+
+    class Message {
+    public:
+        uint8_t* bytesPtr;
+        size_t length;
+
+        Message(uint8_t* bytes, size_t length) // auto delete
+        :bytesPtr(bytes)
+        ,length(length){
+
+        }
+
+        ~Message() {
+            delete[] bytesPtr;
+        }
+
+        void test() {
+
+        }
+    };
+
     class ConnectionCallback {
     public:
         virtual void onConnected() = 0;
@@ -25,8 +52,16 @@ namespace PlayTorrent {
 
         inline int getId() {return mId;}
         void setConnectionCallback(ConnectionCallback* callback);
-        void requestSendMessage(std::shared_ptr<uint8_t*> message, int size);
+        void requestSendMessage(uint8_t* bytes, int length);
+        void onSendMessageQueued();
+
     private:
+        void doSelectLooping();
+    private:
+        // mutex
+        const std::mutex CONNECTION_LOCK;
+        const std::mutex SENDING_BUFFER_LOCK;
+
         int mId;
         std::shared_ptr<ConnectionCallback> mCallback;
 
@@ -37,13 +72,15 @@ namespace PlayTorrent {
         pthread_t mSelectLoopingThread;
 
         // Connection
-        const std::mutex CONNECTION_LOCK;
+        ConnectionState mConnectionState;
         std::string mHost;
         int mPort;
+        int mSocket;
 
         // send buffer
-        const std::mutex SENDING_BUFFER_LOCK;
-        std::deque<std::shared_ptr<uint8_t*>> mSendMessageQueue;
+        std::deque<std::shared_ptr<Message>> mSendMessageQueue;
+
+
     };
 }
 
