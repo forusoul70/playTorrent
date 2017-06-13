@@ -82,6 +82,7 @@ namespace PlayTorrent {
                     break;
                 }
             }
+            return nullptr;
         };
         pthread_create(&mSelectLoopingThread, nullptr, lambdaOnThread, this);
     }
@@ -94,10 +95,10 @@ namespace PlayTorrent {
         }
     }
 
-    void Connection::requestConnect(std::string host, int port) {
+    bool Connection::requestConnect(std::string host, int port) {
         if (host.empty() || port <= 0) {
             LOGE(TAG, "Input host or port is invalid %s:%d", host.c_str(), port);
-            return;
+            return false;
         }
 
         // find host
@@ -110,7 +111,7 @@ namespace PlayTorrent {
 
         if (getaddrinfo(host.c_str(), Utils::toString(port).c_str(), &hint, &peer) != 0) {
             LOGE(TAG, "Failed to get address info %s:%d", host.c_str(), port);
-            return;
+            return false;
         }
 
         int connectedSocket = -1;
@@ -132,10 +133,10 @@ namespace PlayTorrent {
             std::lock_guard<std::mutex> connectionLock(*const_cast<std::mutex*>(&CONNECTION_LOCK));
             mSocket = connectedSocket;
             mConnectionState = Connected;
-            if (mCallback != nullptr) {
-                mCallback->onConnected();
-            }
+            return true;
         }
+
+        return false;
     }
 
     void Connection::setConnectionCallback(ConnectionCallback *callback) {

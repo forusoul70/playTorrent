@@ -13,7 +13,7 @@ public:
 
     }
 
-    virtual void onConnected() {
+    virtual void onConnectionLost() {
         jclass cls = mEnv->GetObjectClass(mJavaCallback);
         jmethodID onConnectedMethod = mEnv->GetMethodID(cls, "onConnected", "()V");
         mEnv->CallVoidMethod(mJavaCallback, onConnectedMethod);
@@ -52,7 +52,7 @@ Java_playtorrent_com_playtorrent_Connection_requestCreate(JNIEnv *env, jobject i
 }
 
 extern "C"
-JNIEXPORT void JNICALL
+JNIEXPORT jboolean JNICALL
 Java_playtorrent_com_playtorrent_Connection_requestConnect(JNIEnv *env, jobject instance, jint id, jstring host_, jint port) {
     const char *host = env->GetStringUTFChars(host_, 0);
     PlayTorrent::Connection* connection = nullptr;
@@ -63,12 +63,16 @@ Java_playtorrent_com_playtorrent_Connection_requestConnect(JNIEnv *env, jobject 
 
     if (connection == nullptr) {
         LOGE(TAG, "Failed to find connection from memory map");
-        return;
+        return (jboolean) false;
     }
 
-    connection->requestConnect(std::string(host), port);
+    bool isConnected = connection->requestConnect(std::string(host), port);
     env->ReleaseStringUTFChars(host_, host);
-}extern "C"
+
+    return (jboolean) isConnected;
+}
+
+extern "C"
 JNIEXPORT void JNICALL
 Java_playtorrent_com_playtorrent_Connection_requestSendMessage(JNIEnv *env, jobject instance, jint id, jbyteArray message_) {
     jbyte *message = env->GetByteArrayElements(message_, NULL);

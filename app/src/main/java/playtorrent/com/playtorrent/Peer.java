@@ -1,6 +1,7 @@
 package playtorrent.com.playtorrent;
 
-import android.support.annotation.NonNull;
+import android.support.annotation.WorkerThread;
+import android.util.Log;
 
 import java.net.ConnectException;
 
@@ -10,6 +11,7 @@ import java.net.ConnectException;
 
 public class Peer {
     private static final boolean DEBUG = BuildConfig.DEBUG;
+    private static final String TAG = "Peer";
 
     private final Connection mConnection;
 
@@ -20,11 +22,21 @@ public class Peer {
         }
     }
 
-    public void connect() {
-        mConnection.connect();
-    }
+    @WorkerThread
+    public void connect(byte[] infoHash, byte[] peerId) {
+        if (ValidationUtils.isEmptyArray(infoHash) || ValidationUtils.isEmptyArray(peerId)) {
+            return;
+        }
 
-    public void sendMessage(@NonNull IBitMessage message) {
+        if (mConnection.connect() == false) {
+            if (DEBUG) {
+                Log.e(TAG, "Connect to peer failed");
+            }
+            return;
+        }
 
+        // hand shake
+        HandshakeMessage handshake = new HandshakeMessage(infoHash, peerId);
+        mConnection.sendMessage(handshake.getMessage());
     }
 }

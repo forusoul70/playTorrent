@@ -41,13 +41,14 @@ namespace PlayTorrent {
 
     class ConnectionCallback {
     public:
-        virtual void onConnected() = 0;
+        virtual void onConnectionLost() = 0;
     };
 
     class Connection {
     public:
         Connection();
-        void requestConnect(std::string host, int port);
+
+        bool requestConnect(std::string host, int port);
         virtual ~Connection();
 
         inline int getId() {return mId;}

@@ -1,6 +1,7 @@
 package playtorrent.com.playtorrent;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.WorkerThread;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -44,18 +45,33 @@ public class Connection {
         mPort = port;
 
         mConnectionCallback = new ConnectionCallback() {
+
             @Override
-            public void onConnected() {
+            public void onConnectionLost() {
                 synchronized (mConnectionLock) {
-                    mConnectionState = ConnectionState.CONNECTED;
+                    mConnectionState = ConnectionState.IDLE;
                 }
             }
         };
         mNativeConnectionInstanceId = requestCreate(mConnectionCallback);
     }
 
-    public void connect() {
-        requestConnect(mNativeConnectionInstanceId, mHost, mPort);
+    @WorkerThread
+    public boolean connect() {
+        synchronized (mConnectionLock) {
+            if (mConnectionState == ConnectionState.CONNECTED) {
+                return true;
+            }
+        }
+
+        if (requestConnect(mNativeConnectionInstanceId, mHost, mPort)) {
+            synchronized (mConnectionLock) {
+                mConnectionState = ConnectionState.CONNECTED;
+            }
+            return true;
+        }
+
+        return false;
     }
 
     public boolean isConnected() {
@@ -75,10 +91,10 @@ public class Connection {
 
     // native code 관련
     private interface ConnectionCallback {
-        public void onConnected();
+        void onConnectionLost();
     }
 
     private native int requestCreate(@NonNull ConnectionCallback callback);
-    private native void requestConnect(int id, String host, int port);
+    private native boolean requestConnect(int id, String host, int port);
     private native void requestSendMessage(int id, byte[] message);
 }

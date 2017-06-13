@@ -176,7 +176,7 @@ public class DownloadProcessor {
 
         for (Map.Entry<String, Peer> entry : mPeerMap.entrySet()) {
             Peer downloadPeer = entry.getValue();
-            downloadPeer.connect();
+            downloadPeer.connect(mTorrent.getInfoHash(), ByteUtils.getByteEncodingSting(mPeerId));
             break;
         }
     }

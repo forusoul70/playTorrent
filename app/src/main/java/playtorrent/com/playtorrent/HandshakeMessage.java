@@ -18,9 +18,9 @@ public class HandshakeMessage implements IBitMessage {
     private static final String PROTOCOL_IDENTIFIER = "BitTorrent protocol";
 
     private final byte[] mInfoHash;
-    private final int mPeerId;
+    private final byte[] mPeerId;
 
-    public HandshakeMessage(@NonNull byte[] infoHash, int peerId) {
+    public HandshakeMessage(@NonNull byte[] infoHash, @NonNull byte[] peerId) {
         this.mInfoHash = infoHash;
         this.mPeerId = peerId;
     }
