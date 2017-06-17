@@ -42,6 +42,7 @@ namespace PlayTorrent {
     class ConnectionCallback {
     public:
         virtual void onConnectionLost() = 0;
+        virtual void onReceived(uint8_t* received, size_t length) = 0;
     };
 
     class Connection {
@@ -55,6 +56,8 @@ namespace PlayTorrent {
         void setConnectionCallback(ConnectionCallback* callback);
         void requestSendMessage(uint8_t* bytes, int length);
         void onSendMessageQueued();
+        void onReceivedFromSocket();
+        void onConnectionLost();
 
     private:
         void doSelectLooping();
@@ -78,10 +81,9 @@ namespace PlayTorrent {
         int mPort;
         int mSocket;
 
-        // send buffer
+        // buffer
         std::deque<std::shared_ptr<Message>> mSendMessageQueue;
-
-
+        const uint8_t *mReceiveBuffer;
     };
 }
 

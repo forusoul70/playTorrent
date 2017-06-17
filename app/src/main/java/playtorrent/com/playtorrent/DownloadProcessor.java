@@ -84,6 +84,9 @@ public class DownloadProcessor {
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     BitDecoder decoder = BitDecoder.fromInputStream(new BufferedInputStream(connection.getInputStream())); // auto close input stream
                     handleResponseTracker(decoder);
+
+                    // for test
+                    break;
                 } catch (MalformedURLException | InvalidKeyException e ) {
                     if (DEBUG) {
                         Log.e(TAG, "findTracker(), Failed to build tracker url", e);

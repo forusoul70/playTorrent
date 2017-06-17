@@ -52,6 +52,17 @@ public class Connection {
                     mConnectionState = ConnectionState.IDLE;
                 }
             }
+
+            @Override
+            public void onReceived(byte[] rev) {
+                if (ValidationUtils.isEmptyArray(rev)) {
+                    Log.e(TAG, "onReceived(), received empty message");
+                    return;
+                }
+
+                // for test
+                Log.e("YYY", "we got message = " + new String(rev));
+            }
         };
         mNativeConnectionInstanceId = requestCreate(mConnectionCallback);
     }
@@ -87,11 +98,13 @@ public class Connection {
             }
             return;
         }
+        requestSendMessage(mNativeConnectionInstanceId, message);
     }
 
     // native code 관련
     private interface ConnectionCallback {
         void onConnectionLost();
+        void onReceived(byte[] rev);
     }
 
     private native int requestCreate(@NonNull ConnectionCallback callback);

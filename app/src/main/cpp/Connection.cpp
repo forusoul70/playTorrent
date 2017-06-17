@@ -17,6 +17,7 @@
 
 static std::atomic<unsigned int> sIDGenerator(0);
 const int MAX_EVENT_COUNT = 128;
+const int READ_BUFFER_SIZE = 1024 * 32;
 
 namespace PlayTorrent {
     Connection::Connection()
@@ -29,6 +30,7 @@ namespace PlayTorrent {
     ,mHost("")
     ,mPort(-1)
     ,mSocket(-1)
+    ,mReceiveBuffer(new uint8_t[READ_BUFFER_SIZE])
     {
         // generate id
         mId = ++sIDGenerator;
@@ -93,6 +95,8 @@ namespace PlayTorrent {
         if (mEventPollBuffer != nullptr) {
             delete[] mEventPollBuffer;
         }
+
+        delete[] mReceiveBuffer;
     }
 
     bool Connection::requestConnect(std::string host, int port) {
@@ -127,12 +131,23 @@ namespace PlayTorrent {
             }
             break;
         }
+        freeaddrinfo(peer);
 
         if (connectedSocket > 0) {
             // lock connection
             std::lock_guard<std::mutex> connectionLock(*const_cast<std::mutex*>(&CONNECTION_LOCK));
             mSocket = connectedSocket;
             mConnectionState = Connected;
+
+            struct epoll_event socketEvent = {0};
+            socketEvent.data.ptr = &mSocket;
+            // EPOLLRDHUP :  detect peer shut down
+            // EPOLLLET :  edge trigger ??
+            socketEvent.events = EPOLLIN | EPOLLERR | EPOLLHUP | EPOLLET;
+            if (epoll_ctl(mPollFd, EPOLL_CTL_ADD, connectedSocket, &socketEvent) != 0) {
+                LOGE(TAG, "Failed to add event [%d]", errno);
+                return false;
+            }
             return true;
         }
 
@@ -214,13 +229,49 @@ namespace PlayTorrent {
         for (int32_t i=0; i < eventCount; i++) {
             if (mEventPollBuffer[i].events & EPOLLIN) {
                 if (mEventPollBuffer[i].data.ptr == &mSocket) { // socket
-
+                    LOGD(TAG, "Received message");
+                    onReceivedFromSocket();
                 } else { // sending buffer
+                    LOGD(TAG, "Send message");
                     onSendMessageQueued();
                 }
+            } else if (mEventPollBuffer[i].events & EPOLLHUP) {
+                LOGD(TAG, "Connection lost");
+                onConnectionLost();
             } else {
                 LOGE(TAG, "Not handled event [%d]", mEventPollBuffer[i].events);
             }
+        }
+    }
+
+    void Connection::onReceivedFromSocket() {
+        // lock connection
+        std::lock_guard<std::mutex> connectionLock(*const_cast<std::mutex*>(&CONNECTION_LOCK));
+        if (mConnectionState != Connected) {
+            LOGE(TAG, "onReceivedFromSocket(), socket is not connected");
+            return;
+        }
+
+        ssize_t readBytes = recv(mSocket, (void*) mReceiveBuffer, READ_BUFFER_SIZE, 0);
+        if (readBytes < 0) {
+            LOGE(TAG, "onReceivedFromSocket(), Failed to read message from socket");
+        }
+
+        if (mCallback != nullptr) {
+            // clone buffer
+            uint8_t *clone = new uint8_t[readBytes];
+            memcpy(clone, mReceiveBuffer, (size_t) readBytes);
+            mCallback->onReceived(clone, (size_t) readBytes);
+        }
+    }
+
+    void Connection::onConnectionLost() {
+        // lock connection
+        std::lock_guard<std::mutex> connectionLock(*const_cast<std::mutex*>(&CONNECTION_LOCK));
+        mConnectionState = Suspended;
+
+        if (mCallback != nullptr) {
+            mCallback->onConnectionLost();
         }
     }
 }

@@ -15,8 +15,25 @@ public:
 
     virtual void onConnectionLost() {
         jclass cls = mEnv->GetObjectClass(mJavaCallback);
-        jmethodID onConnectedMethod = mEnv->GetMethodID(cls, "onConnected", "()V");
-        mEnv->CallVoidMethod(mJavaCallback, onConnectedMethod);
+        jmethodID onConnectionLost = mEnv->GetMethodID(cls, "onConnectionLost", "()V");
+        mEnv->CallVoidMethod(mJavaCallback, onConnectionLost);
+    }
+
+    virtual void onReceived(uint8_t* received, size_t length) {
+        if (received == nullptr || length <= 0) {
+            return;
+        }
+
+        jbyteArray jReceived = mEnv->NewByteArray(length);
+        if (jReceived == nullptr) {
+            LOGE(TAG, "Failed to allocate java buffer [%d]", length);
+            return;
+        }
+        mEnv->SetByteArrayRegion(jReceived, 0, length, reinterpret_cast<jbyte*>(received));
+
+        jclass cls = mEnv->GetObjectClass(mJavaCallback);
+        jmethodID onReceived = mEnv->GetMethodID(cls, "onReceived", "([B)V");
+        mEnv->CallObjectMethod(mJavaCallback, onReceived, jReceived);
     }
 
     virtual ~JavaConnectionCallback() {
