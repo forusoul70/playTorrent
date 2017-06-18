@@ -7,16 +7,17 @@
 
 class JavaConnectionCallback : public PlayTorrent::ConnectionCallback {
 public:
-    JavaConnectionCallback(JNIEnv* env, jobject callbackInstance)
-    :mEnv(env)
+    JavaConnectionCallback(JavaVM* env, jobject callbackInstance)
+    :mJvm(env)
     ,mJavaCallback(callbackInstance){
 
     }
 
     virtual void onConnectionLost() {
-        jclass cls = mEnv->GetObjectClass(mJavaCallback);
-        jmethodID onConnectionLost = mEnv->GetMethodID(cls, "onConnectionLost", "()V");
-        mEnv->CallVoidMethod(mJavaCallback, onConnectionLost);
+        JNIEnv* env = getEnv();
+        jclass cls = env->GetObjectClass(mJavaCallback);
+        jmethodID onConnectionLost = env->GetMethodID(cls, "onConnectionLost", "()V");
+        env->CallVoidMethod(mJavaCallback, onConnectionLost);
     }
 
     virtual void onReceived(uint8_t* received, size_t length) {
@@ -24,25 +25,33 @@ public:
             return;
         }
 
-        jbyteArray jReceived = mEnv->NewByteArray(length);
+        JNIEnv* env = getEnv();
+        jbyteArray jReceived = env->NewByteArray(length);
         if (jReceived == nullptr) {
             LOGE(TAG, "Failed to allocate java buffer [%d]", length);
             return;
         }
-        mEnv->SetByteArrayRegion(jReceived, 0, length, reinterpret_cast<jbyte*>(received));
+        env->SetByteArrayRegion(jReceived, 0, length, reinterpret_cast<jbyte*>(received));
 
-        jclass cls = mEnv->GetObjectClass(mJavaCallback);
-        jmethodID onReceived = mEnv->GetMethodID(cls, "onReceived", "([B)V");
-        mEnv->CallObjectMethod(mJavaCallback, onReceived, jReceived);
+        jclass cls = env->GetObjectClass(mJavaCallback);
+        jmethodID onReceived = env->GetMethodID(cls, "onReceived", "([B)V");
+        env->CallObjectMethod(mJavaCallback, onReceived, jReceived);
     }
 
     virtual ~JavaConnectionCallback() {
-        mEnv->DeleteGlobalRef(mJavaCallback);
+        JNIEnv* env = getEnv();
+        env->DeleteGlobalRef(mJavaCallback);
     }
 
 private:
-    JNIEnv *mEnv;
+    JavaVM *mJvm;
     jobject mJavaCallback;
+
+    JNIEnv* getEnv() {
+        JNIEnv* env;
+        mJvm->AttachCurrentThread(&env, 0);
+        return env;
+    }
 };
 
 
@@ -63,7 +72,10 @@ Java_playtorrent_com_playtorrent_Connection_requestCreate(JNIEnv *env, jobject i
     sConnectionMap.insert(std::make_pair(nativeConnection->getId(), nativeConnection));
 
     // create callback wrapper
-    JavaConnectionCallback* callbackWrapper = new JavaConnectionCallback(env, env->NewGlobalRef(callback));
+    JavaVM* jvm;
+    env->GetJavaVM(&jvm);
+
+    JavaConnectionCallback* callbackWrapper = new JavaConnectionCallback(jvm, env->NewGlobalRef(callback));
     nativeConnection->setConnectionCallback(callbackWrapper);
     return nativeConnection->getId();
 }
