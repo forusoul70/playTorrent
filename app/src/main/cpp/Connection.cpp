@@ -126,7 +126,7 @@ namespace PlayTorrent {
             }
 
             if (connect(connectedSocket, p->ai_addr, p->ai_addrlen) < 0) {
-                LOGE(TAG, "Failed to connect socket");
+                LOGE(TAG, "Failed to connect socket %s:%d [%d]", host.c_str(), port, errno);
                 continue;
             }
             break;
