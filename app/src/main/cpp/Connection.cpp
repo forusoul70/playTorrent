@@ -8,6 +8,7 @@
 #include <sys/eventfd.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include "Connection.h"
 #include "Exception.h"
 #include "logging.h"
@@ -126,8 +127,10 @@ namespace PlayTorrent {
             }
 
             if (connect(connectedSocket, p->ai_addr, p->ai_addrlen) < 0) {
-                LOGE(TAG, "Failed to connect socket %s:%d [%d]", host.c_str(), port, errno);
-                continue;
+                LOGE(TAG, "Failed to connect socket %s:%d [%d] try by explicit address", host.c_str(), port, errno);
+                if ((connectedSocket = connectByIp4(host, port)) < 0) {
+                    continue;
+                }
             }
             break;
         }
@@ -152,6 +155,34 @@ namespace PlayTorrent {
         }
 
         return false;
+    }
+
+    int Connection::connectByIp4(std::string host, int port) {
+        if (host.length() == 0 || port < 0) {
+            return -1;
+        }
+
+        // addr info
+
+
+        int sock= -1;
+        if ((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+            LOGE(TAG, "connectByIp4(), Failed to create socket");
+            return -1;
+        }
+
+        struct sockaddr_in addr = {0};
+        addr.sin_family = AF_INET;;
+        addr.sin_port = htons(port);
+        addr.sin_addr.s_addr = ((struct in_addr *)gethostbyname(host.c_str()))->s_addr;
+
+        if (connect(sock, (sockaddr*)&addr, sizeof(sockaddr_in)) < 0) {
+            LOGE(TAG, "connectByIp4(), Failed to connect socket %s:%d [%d]", host.c_str(), port, errno);
+            close(sock);
+            return -1;
+        }
+
+        return sock;
     }
 
     void Connection::setConnectionCallback(ConnectionCallback *callback) {

@@ -48,9 +48,9 @@ namespace PlayTorrent {
     class Connection {
     public:
         Connection();
+        virtual ~Connection();
 
         bool requestConnect(std::string host, int port);
-        virtual ~Connection();
 
         inline int getId() {return mId;}
         void setConnectionCallback(ConnectionCallback* callback);
@@ -61,6 +61,7 @@ namespace PlayTorrent {
 
     private:
         void doSelectLooping();
+        int connectByIp4(std::string host, int port);
     private:
         // mutex
         const std::mutex CONNECTION_LOCK;
