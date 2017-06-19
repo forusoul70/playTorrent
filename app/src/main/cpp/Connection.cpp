@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <unistd.h>
 #include "Connection.h"
 #include "Exception.h"
 #include "logging.h"

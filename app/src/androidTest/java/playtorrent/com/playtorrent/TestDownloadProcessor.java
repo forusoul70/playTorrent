@@ -24,5 +24,10 @@ public class TestDownloadProcessor {
         Assert.assertEquals(20, peer.getPeerId().length());
 
         peer.start();
+
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException ignore) {
+        }
     }
 }

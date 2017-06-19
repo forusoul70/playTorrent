@@ -35,7 +35,7 @@ public:
 
         jclass cls = env->GetObjectClass(mJavaCallback);
         jmethodID onReceived = env->GetMethodID(cls, "onReceived", "([B)V");
-        env->CallObjectMethod(mJavaCallback, onReceived, jReceived);
+        env->CallVoidMethod(mJavaCallback, onReceived, jReceived);
     }
 
     virtual ~JavaConnectionCallback() {
