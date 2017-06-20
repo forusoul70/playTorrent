@@ -1,9 +1,16 @@
 package playtorrent.com.playtorrent;
 
+import android.support.annotation.NonNull;
 import android.support.annotation.WorkerThread;
 import android.util.Log;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.ConnectException;
+import java.security.InvalidKeyException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Torrent peer
@@ -23,7 +30,7 @@ public class Peer {
     }
 
     @WorkerThread
-    public void connect(byte[] infoHash, byte[] peerId) {
+    public void connect(byte[] infoHash, byte[] peerId) throws IOException, InvalidKeyException, InterruptedException {
         if (ValidationUtils.isEmptyArray(infoHash) || ValidationUtils.isEmptyArray(peerId)) {
             return;
         }
@@ -35,8 +42,32 @@ public class Peer {
             return;
         }
 
+        final ByteArrayOutputStream receivedBytes = new ByteArrayOutputStream();
+        final CountDownLatch latch = new CountDownLatch(1);
+        Connection.ConnectionListener listener = new Connection.ConnectionListener() {
+            @Override
+            public void onReceived(@NonNull byte[] received) {
+                try {
+                    receivedBytes.write(received);
+                } catch (IOException ignore) {
+
+                } finally {
+                    latch.countDown();
+                }
+            }
+        };
+
         // hand shake
-        HandshakeMessage handshake = new HandshakeMessage(infoHash, peerId);
-        mConnection.sendMessage(handshake.getMessage());
+        mConnection.addConnectionListener(listener);
+        try {
+            HandshakeMessage handshake = new HandshakeMessage(infoHash, peerId);
+            mConnection.sendMessage(handshake.getMessage());
+            latch.await(1, TimeUnit.MINUTES);
+        } finally {
+            mConnection.removeListener(listener);
+        }
+
+        // validation handshake
+        BitDecoder decoder = BitDecoder.fromInputStream(new ByteArrayInputStream(receivedBytes.toByteArray()));
     }
 }

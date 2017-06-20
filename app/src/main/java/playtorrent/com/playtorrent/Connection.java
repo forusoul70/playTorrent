@@ -5,6 +5,8 @@ import android.support.annotation.WorkerThread;
 import android.text.TextUtils;
 import android.util.Log;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 /**
  * Manage connection with peer
  */
@@ -28,9 +30,16 @@ public class Connection {
     private final Object mConnectionLock = new Object();
     private ConnectionState mConnectionState = ConnectionState.IDLE;
 
+    // listener
+    private final ConcurrentLinkedQueue<ConnectionListener> mListenerList = new ConcurrentLinkedQueue<>();
+
     // for native
     private final ConnectionCallback mConnectionCallback;
     private int mNativeConnectionInstanceId = -1;
+
+    public interface ConnectionListener {
+        void onReceived(@NonNull byte[] received);
+    }
 
     public static Connection fromAddress(String host, int port) {
         if (TextUtils.isEmpty(host) || port < 0) {
@@ -60,11 +69,22 @@ public class Connection {
                     return;
                 }
 
-                // for test
-                Log.e("YYY", "we got message = " + new String(rev));
+                for (ConnectionListener listener : mListenerList) {
+                    listener.onReceived(rev);
+                }
             }
         };
         mNativeConnectionInstanceId = requestCreate(mConnectionCallback);
+    }
+
+    public void addConnectionListener(@NonNull ConnectionListener listener) {
+        if (mListenerList.contains(listener) == false) {
+            mListenerList.add(listener);
+        }
+    }
+
+    public void removeListener(@NonNull ConnectionListener listener) {
+
     }
 
     @WorkerThread

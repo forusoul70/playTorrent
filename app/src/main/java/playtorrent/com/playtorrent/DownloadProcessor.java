@@ -179,7 +179,11 @@ public class DownloadProcessor {
 
         for (Map.Entry<String, Peer> entry : mPeerMap.entrySet()) {
             Peer downloadPeer = entry.getValue();
-            downloadPeer.connect(mTorrent.getInfoHash(), ByteUtils.getByteEncodingSting(mPeerId));
+            try {
+                downloadPeer.connect(mTorrent.getInfoHash(), ByteUtils.getByteEncodingSting(mPeerId));
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to connect to peer");
+            }
             break;
         }
     }
