@@ -4,10 +4,10 @@ import android.support.annotation.NonNull;
 import android.support.annotation.WorkerThread;
 import android.util.Log;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +52,9 @@ public class Peer {
                 } catch (IOException ignore) {
 
                 } finally {
-                    latch.countDown();
+                    if (receivedBytes.size() >= HandshakeMessage.BASE_HANDSHAKE_LENGTH) {
+                        latch.countDown();
+                    }
                 }
             }
         };
@@ -63,11 +65,21 @@ public class Peer {
             HandshakeMessage handshake = new HandshakeMessage(infoHash, peerId);
             mConnection.sendMessage(handshake.getMessage());
             latch.await(1, TimeUnit.MINUTES);
+
+            // validate handshake
+            HandshakeMessage response = HandshakeMessage.parseFromResponse(ByteBuffer.wrap(receivedBytes.toByteArray()));
+            if (response == null || handshake.validateHandShake(response) == false) {
+                if (DEBUG) {
+                    Log.e(TAG, "connect(), Failed to handshake");
+                }
+                return;
+            }
+
+            if (DEBUG) {
+                Log.i(TAG, "Hand shake finished ");
+            }
         } finally {
             mConnection.removeListener(listener);
         }
-
-        // validation handshake
-        BitDecoder decoder = BitDecoder.fromInputStream(new ByteArrayInputStream(receivedBytes.toByteArray()));
     }
 }

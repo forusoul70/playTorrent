@@ -49,4 +49,17 @@ public class ByteUtils {
         }
         return new byte[0];
     }
+
+    public static String decodeByteEncodeString(byte[] str) {
+        if (ValidationUtils.isEmptyArray(str)) {
+            return null;
+        }
+
+        try {
+            return new String(str, BYTE_ENCODING);
+        } catch (UnsupportedEncodingException ignore) {
+
+        }
+        return null;
+    }
 }
