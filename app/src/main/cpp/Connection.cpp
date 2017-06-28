@@ -20,6 +20,7 @@
 static std::atomic<unsigned int> sIDGenerator(0);
 const int MAX_EVENT_COUNT = 128;
 const int READ_BUFFER_SIZE = 1024 * 32;
+const int LISTENQ = 1024;
 
 namespace PlayTorrent {
     Connection::Connection()
@@ -102,6 +103,13 @@ namespace PlayTorrent {
     }
 
     bool Connection::requestConnect(std::string host, int port) {
+        // lock connection
+        std::lock_guard<std::mutex> connectionLock(*const_cast<std::mutex*>(&CONNECTION_LOCK));
+        if (mConnectionState != Idle) {
+            LOGE(TAG, "requestConnect(), Connection state is not idle");
+            return false;
+        }
+
         if (host.empty() || port <= 0) {
             LOGE(TAG, "Input host or port is invalid %s:%d", host.c_str(), port);
             return false;
@@ -137,21 +145,9 @@ namespace PlayTorrent {
         }
         freeaddrinfo(peer);
 
-        if (connectedSocket > 0) {
-            // lock connection
-            std::lock_guard<std::mutex> connectionLock(*const_cast<std::mutex*>(&CONNECTION_LOCK));
+        if (connectedSocket > 0 && addSocketToEpoll(connectedSocket)) {
             mSocket = connectedSocket;
             mConnectionState = Connected;
-
-            struct epoll_event socketEvent = {0};
-            socketEvent.data.ptr = &mSocket;
-            // EPOLLRDHUP :  detect peer shut down
-            // EPOLLLET :  edge trigger ??
-            socketEvent.events = EPOLLIN | EPOLLERR | EPOLLHUP | EPOLLET;
-            if (epoll_ctl(mPollFd, EPOLL_CTL_ADD, connectedSocket, &socketEvent) != 0) {
-                LOGE(TAG, "Failed to add event [%d]", errno);
-                return false;
-            }
             return true;
         }
 
@@ -305,6 +301,65 @@ namespace PlayTorrent {
         if (mCallback != nullptr) {
             mCallback->onConnectionLost();
         }
+    }
+
+    bool Connection::bindServerConnection(short port) {
+        // lock connection
+        std::lock_guard<std::mutex> connectionLock(*const_cast<std::mutex*>(&CONNECTION_LOCK));
+        if (mConnectionState != Idle) {
+            LOGE(TAG, "bindServerConnection(), Connection state is not idle");
+            return false;
+        }
+
+        // create socket
+        int sock;
+        if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+            LOGE(TAG, "bindServerConnection(), Failed to create socket");
+            return false;
+        }
+
+        // bind
+        struct sockaddr_in localAddress;
+        memset(&localAddress, 0, sizeof(sockaddr_in));
+        localAddress.sin_family = AF_INET;
+        localAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+        localAddress.sin_port = htons(port);
+
+        if (bind(sock, (sockaddr*) &localAddress, sizeof(localAddress)) < 0) {
+            LOGE(TAG, "bindServerConnection() Failed to bind socket [%d]", errno);
+            close(sock);
+            return false;
+        }
+
+        // listen
+        if (listen(sock, LISTENQ) < 0) {
+            LOGE(TAG, "bindServerConnection() Failed to listen socket [%d]", errno);
+            close(sock);
+            return false;
+        }
+
+        if (addSocketToEpoll(sock)) {
+            mSocket = sock;
+            mConnectionState = Bind;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool Connection::addSocketToEpoll(int sockFd) {
+        struct epoll_event socketEvent = {0};
+        socketEvent.data.ptr = &mSocket;
+
+        // EPOLLRDHUP :  detect peer shut down
+        // EPOLLLET :  edge trigger ??
+
+        socketEvent.events = EPOLLIN | EPOLLERR | EPOLLHUP | EPOLLET;
+        if (epoll_ctl(mPollFd, EPOLL_CTL_ADD, sockFd, &socketEvent) != 0) {
+            LOGE(TAG, "Failed to add event [%d]", errno);
+            return false;
+        }
+        return true;
     }
 }
 

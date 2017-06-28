@@ -15,6 +15,7 @@ namespace PlayTorrent {
     enum ConnectionState {
         Idle,
         Connected,
+        Bind,
         Connecting,
         Suspended
     };
@@ -58,10 +59,12 @@ namespace PlayTorrent {
         void onSendMessageQueued();
         void onReceivedFromSocket();
         void onConnectionLost();
+        bool bindServerConnection(short port);
 
     private:
         void doSelectLooping();
         int connectByIp4(std::string host, int port);
+        bool addSocketToEpoll(int sockFd);
     private:
         // mutex
         const std::mutex CONNECTION_LOCK;
