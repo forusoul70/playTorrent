@@ -26,6 +26,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 
 public class DownloadProcessor {
+    public interface DownloadListener {
+        void onDownloadStarted();
+    }
+
     private static final boolean DEBUG = BuildConfig.DEBUG;
     private static final String TAG = "DownloadProcessor";
 
@@ -34,10 +38,16 @@ public class DownloadProcessor {
 
     private final ConcurrentHashMap<String, Peer> mPeerMap = new ConcurrentHashMap<>();
 
+    private DownloadListener mDownloadListener = null;
+
     public DownloadProcessor(@NonNull Torrent torrent) {
         mTorrent = torrent;
         String uuid[] = UUID.randomUUID().toString().split("-");
         mPeerId = uuid[0] + uuid[1] + uuid[2] + uuid[3]; // length 20;
+    }
+
+    public void setDownloadListener(DownloadListener listener) {
+        mDownloadListener = listener;
     }
 
     public void start() {

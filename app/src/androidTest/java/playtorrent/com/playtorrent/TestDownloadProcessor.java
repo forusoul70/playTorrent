@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Download peer
@@ -17,7 +18,7 @@ import java.io.IOException;
 @RunWith(AndroidJUnit4.class)
 public class TestDownloadProcessor {
     @Test
-    public void testDownloadPeer() throws IOException {
+    public void testDownloadPeer() throws IOException, InterruptedException {
         Context appContext = InstrumentationRegistry.getTargetContext();
         Torrent torrent = Torrent.createFromInputStream(appContext.getAssets().open("ubuntu-17.04-desktop-amd64.iso.torrent"));
         DownloadProcessor peer = new DownloadProcessor(torrent);
@@ -25,9 +26,14 @@ public class TestDownloadProcessor {
 
         peer.start();
 
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException ignore) {
-        }
+        final CountDownLatch latch = new CountDownLatch(1);
+        peer.setDownloadListener(new DownloadProcessor.DownloadListener() {
+            @Override
+            public void onDownloadStarted() {
+                latch.countDown();
+            }
+        });
+        latch.await()
+        ;
     }
 }
