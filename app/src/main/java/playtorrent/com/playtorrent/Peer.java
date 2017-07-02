@@ -103,28 +103,55 @@ public class Peer {
     }
 
     private void handleReceiveBytes(@NonNull byte[] receivedBytes) {
+        ByteBuffer peerMessage = null;
         synchronized (mReceiveMessageService) {
             for (int i = 0; i < receivedBytes.length; i++) {
                 mReceivedMessageBuffer.add(receivedBytes[i]);
             }
 
-            if (mReceivedMessageBuffer.isEmpty()) {
+            if (mReceivedMessageBuffer.size() < 4) {
                 if (DEBUG) {
                     Log.e(TAG, "handleReceiveBytes(), Message buffer is empty");
                 }
                 return;
             }
 
-            IBitMessage.Type type = IBitMessage.Type.byValue(mReceivedMessageBuffer.get(0));
-            if (DEBUG) {
-                Log.i(TAG, "handleReceiveBytes() type = " + type);
+            // validate message length
+            int length = ByteUtils.get32Int(new byte[] {
+                    mReceivedMessageBuffer.get(0), mReceivedMessageBuffer.get(1),
+                    mReceivedMessageBuffer.get(2), mReceivedMessageBuffer.get(3),
+            });
+
+            int totalLength = length + 4;
+            if (mReceivedMessageBuffer.size() <= totalLength) {
+                if (DEBUG) {
+                    Log.e(TAG, "handleReceiveBytes(), Message buffer is empty");
+                }
+                return;
             }
-            switch (type) {
-                case UNCHOKE:
-                    mReceivedMessageBuffer.remove(0); // no payload
-                    mReceiveMessageService.submit(createHandleReceivedMessageRunnable(new UnChokeMessage()));
-                default:
+
+            peerMessage = ByteBuffer.wrap(ByteUtils.toArray(mReceivedMessageBuffer, totalLength));
+            for (int i=0; i < totalLength; i++) {
+                mReceivedMessageBuffer.remove(0);
             }
+        }
+
+        if (peerMessage != null) {
+            handlePeerMessage(peerMessage);
+        }
+    }
+
+    private void handlePeerMessage(@NonNull ByteBuffer message) {
+        int length = message.getInt();
+        IBitMessage.Type type = IBitMessage.Type.byValue(mReceivedMessageBuffer.get(0));
+        if (DEBUG) {
+            Log.i(TAG, "handleReceiveBytes() type = " + type + " , length = " + length);
+        }
+        switch (type) {
+            case UNCHOKE:
+                mReceivedMessageBuffer.remove(0); // no payload
+                mReceiveMessageService.submit(createHandleReceivedMessageRunnable(new UnChokeMessage()));
+            default:
         }
     }
 

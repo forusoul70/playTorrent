@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Locale;
 
 /**
@@ -61,5 +62,20 @@ public class ByteUtils {
 
         }
         return null;
+    }
+
+    public static int get32Int(@NonNull byte[] bytes) {
+        return (bytes[3] << 24 |
+                bytes[2] << 16 |
+                bytes[1] << 8 |
+                bytes[0]);
+    }
+
+    public static byte[] toArray(@NonNull ArrayList<Byte> list, int length) {
+        byte[] array = new byte[list.size()];
+        for (int i = 0; i < list.size() && i < length; i++) {
+            array[i] = list.get(i);
+        }
+        return array;
     }
 }
