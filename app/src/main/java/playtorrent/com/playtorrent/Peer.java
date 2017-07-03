@@ -123,7 +123,7 @@ public class Peer {
             });
 
             int totalLength = length + 4;
-            if (mReceivedMessageBuffer.size() <= totalLength) {
+            if (mReceivedMessageBuffer.size() < totalLength) {
                 if (DEBUG) {
                     Log.e(TAG, "handleReceiveBytes(), Message buffer is empty");
                 }
@@ -143,7 +143,7 @@ public class Peer {
 
     private void handlePeerMessage(@NonNull ByteBuffer message) {
         int length = message.getInt();
-        IBitMessage.Type type = IBitMessage.Type.byValue(mReceivedMessageBuffer.get(0));
+        IBitMessage.Type type = IBitMessage.Type.byValue(message.get());
         if (DEBUG) {
             Log.i(TAG, "handleReceiveBytes() type = " + type + " , length = " + length);
         }

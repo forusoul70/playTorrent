@@ -65,10 +65,10 @@ public class ByteUtils {
     }
 
     public static int get32Int(@NonNull byte[] bytes) {
-        return (bytes[3] << 24 |
-                bytes[2] << 16 |
-                bytes[1] << 8 |
-                bytes[0]);
+        return bytes[3] & 0xff |
+                (bytes[2] & 0xff) << 8 |
+                (bytes[1] & 0xff) << 16 |
+                (bytes[0] & 0xff) << 24;
     }
 
     public static byte[] toArray(@NonNull ArrayList<Byte> list, int length) {
