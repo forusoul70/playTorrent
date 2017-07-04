@@ -149,13 +149,15 @@ public class Peer {
         }
         switch (type) {
             case UNCHOKE:
-                mReceivedMessageBuffer.remove(0); // no payload
-                mReceiveMessageService.submit(createHandleReceivedMessageRunnable(new UnChokeMessage()));
+                break;
+            case BIT_FIELD:
+                mReceiveMessageService.submit(createHandleBitField(new BitFieldMessage(message)));
+                break;
             default:
         }
     }
 
-    private Runnable createHandleReceivedMessageRunnable(IBitMessage message) {
+    private Runnable createHandleBitField(@NonNull BitFieldMessage bitField) {
         return new Runnable() {
             @Override
             public void run() {
