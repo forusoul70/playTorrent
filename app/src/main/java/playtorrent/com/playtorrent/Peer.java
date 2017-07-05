@@ -157,11 +157,15 @@ public class Peer {
         }
     }
 
-    private Runnable createHandleBitField(@NonNull BitFieldMessage bitField) {
+    private Runnable createHandleBitField(@NonNull final BitFieldMessage bitField) {
         return new Runnable() {
             @Override
             public void run() {
-
+                if (bitField.cardinality() > 0) {
+                    mConnection.sendMessage(new InterestedMessage().getMessage());
+                } else {
+                    // TODO not interesting
+                }
             }
         };
     }

@@ -35,4 +35,12 @@ public class BitFieldMessage implements IBitMessage {
     public byte[] getMessage() {
         return new byte[0];
     }
+
+    public int cardinality() {
+        int sum = 0;
+        for (int bit : mBitSet) {
+            sum += bit;
+        }
+        return sum;
+    }
 }

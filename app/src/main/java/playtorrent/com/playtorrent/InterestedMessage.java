@@ -3,16 +3,17 @@ package playtorrent.com.playtorrent;
 import java.nio.ByteBuffer;
 
 /**
- * Un choke message
+ * Interested message
  */
 
-public class UnChokeMessage implements IBitMessage {
+public class InterestedMessage implements IBitMessage {
+
     @Override
     public byte[] getMessage() {
         // No payload message
         ByteBuffer buffer = ByteBuffer.allocate(5); // 4(message length byte) + 1(message type byte)
         buffer.putInt(1);
-        buffer.put((byte) Type.UNCHOKE.getValue());
+        buffer.put((byte) Type.INTERESTED.getValue());
         return buffer.array();
     }
 }
