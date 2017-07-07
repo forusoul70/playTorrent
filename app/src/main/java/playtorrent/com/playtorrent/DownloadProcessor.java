@@ -3,6 +3,7 @@ package playtorrent.com.playtorrent;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.SparseArray;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -37,6 +38,7 @@ public class DownloadProcessor {
     private final String mPeerId;
 
     private final ConcurrentHashMap<String, Peer> mPeerMap = new ConcurrentHashMap<>();
+    private final SparseArray<Piece> mDownloadMap = new SparseArray<>();
 
     private DownloadListener mDownloadListener = null;
 
@@ -44,6 +46,15 @@ public class DownloadProcessor {
         mTorrent = torrent;
         String uuid[] = UUID.randomUUID().toString().split("-");
         mPeerId = uuid[0] + uuid[1] + uuid[2] + uuid[3]; // length 20;
+
+        // init piece array
+        int maxIndex = mTorrent.getMaxIndex();
+        int pieceLength = mTorrent.getPieceLength();
+        for (int i = 0; i < maxIndex; i++) {
+            int size = i != (maxIndex -1) ? pieceLength : mTorrent.getFileLength() % pieceLength;
+            Piece piece = new Piece(i, i * pieceLength, size);
+            mDownloadMap.put(i, piece);
+        }
     }
 
     public void setDownloadListener(DownloadListener listener) {
@@ -159,6 +170,7 @@ public class DownloadProcessor {
 
                 try {
                     Peer downloadPeer = new Peer(ip.getHostAddress(), port);
+                    downloadPeer.setPeerListener(mPeerEventListener);
                     mPeerMap.put(ip.getHostAddress(), downloadPeer);
                     break;
                 } catch (ConnectException e) {
@@ -197,4 +209,35 @@ public class DownloadProcessor {
             break;
         }
     }
+
+    private Piece getNextDownloadPiece() {
+        synchronized (mDownloadMap) {
+            int maxIndex = mTorrent.getMaxIndex();
+            for (int i = 0; i < maxIndex; i++) {
+                Piece piece = mDownloadMap.get(i);
+                if (piece.getDownloadLength() == 0) {
+                    return piece;
+                }
+            }
+        }
+        return null;
+    }
+
+    private final Peer.PeerEventListener mPeerEventListener = new Peer.PeerEventListener() {
+        @Override
+        public void onBitFiled(@NonNull Peer peer, @NonNull BitFieldMessage bitField) {
+            if (bitField.cardinality() > 0) {
+                peer.requestSendInterestMessage();
+
+                Piece piece = getNextDownloadPiece();
+                if (piece == null) {
+                    if (DEBUG) {
+                        Log.e(TAG, "onBitFiled(), Failed to find piece to download. Is finished download ?");
+                    }
+                    return;
+                }
+                peer.requestSendRequestMessage(piece);
+            }
+        }
+    };
 }

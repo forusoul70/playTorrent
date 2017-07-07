@@ -33,7 +33,6 @@ public class TestDownloadProcessor {
                 latch.countDown();
             }
         });
-        latch.await()
-        ;
+        latch.await();
     }
 }

@@ -20,6 +20,10 @@ import java.util.concurrent.TimeUnit;
  */
 
 public class Peer {
+    public interface PeerEventListener {
+        void onBitFiled(@NonNull Peer peer, @NonNull BitFieldMessage bitField);
+    }
+
     private static final boolean DEBUG = BuildConfig.DEBUG;
     private static final String TAG = "Peer";
 
@@ -29,6 +33,8 @@ public class Peer {
     // received message thread
     private final ArrayList<Byte> mReceivedMessageBuffer;
     private final ExecutorService mReceiveMessageService;
+
+    private PeerEventListener mListener = null;
 
     public Peer(String host, int port) throws ConnectException {
         mConnection = Connection.fromAddress(host, port);
@@ -45,6 +51,10 @@ public class Peer {
 
         mReceiveMessageService = Executors.newFixedThreadPool(1);
         mReceivedMessageBuffer = new ArrayList<>();
+    }
+
+    public void setPeerListener(PeerEventListener listener) {
+        mListener = listener;
     }
 
     @WorkerThread
@@ -100,6 +110,14 @@ public class Peer {
         } finally {
             mConnection.removeListener(listener);
         }
+    }
+
+    void requestSendInterestMessage() {
+        mConnection.sendMessage(new InterestedMessage().getMessage());
+    }
+
+    void requestSendRequestMessage(@NonNull Piece piece) {
+        mConnection.sendMessage(new RequestMessage(piece.getIndex(), piece.getOffset(), piece.getLength()).getMessage());
     }
 
     private void handleReceiveBytes(@NonNull byte[] receivedBytes) {
@@ -161,10 +179,8 @@ public class Peer {
         return new Runnable() {
             @Override
             public void run() {
-                if (bitField.cardinality() > 0) {
-                    mConnection.sendMessage(new InterestedMessage().getMessage());
-                } else {
-                    // TODO not interesting
+                if (mListener != null) {
+                    mListener.onBitFiled(Peer.this, bitField);
                 }
             }
         };

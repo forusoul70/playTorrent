@@ -19,8 +19,12 @@ public class Torrent {
     private static final boolean DEBUG = BuildConfig.DEBUG;
     private static final String TAG = "Torrent";
 
+    private static final int PIECE_HASH_SIZE = 20;
+
     private byte[] mInfoHash = null;
     private int mFileLength = 0;
+    private int mPieceLength = 0;
+    private ByteBuffer mPieceHashes = null;
     private final ArrayList<String> mTrackerList = new ArrayList<>();
 
     public static Torrent createFromInputStream(InputStream in) {
@@ -77,7 +81,26 @@ public class Torrent {
                 }
                 return null;
             }
-            client = new Torrent(infoHash, trackerList, (Integer) length);
+
+            // piece length
+            Object pieceLength = infoMap.get("piece length");
+            if (pieceLength == null || pieceLength instanceof Integer == false) {
+                if (DEBUG) {
+                    Log.e(TAG, "createFromInputStream(), failed to get piece length");
+                }
+                return null;
+            }
+
+            // piece hashes
+            Object pieceHash = infoMap.get("pieces");
+            if (pieceHash == null || pieceHash instanceof ByteBuffer == false) {
+                if (DEBUG) {
+                    Log.e(TAG, "createFromInputStream(), failed to get piece hashes");
+                }
+                return null;
+            }
+
+            client = new Torrent(infoHash, trackerList, (Integer) length, (Integer) pieceLength, (ByteBuffer) pieceHash);
         } catch (Exception e) {
             if (DEBUG) {
                 Log.e(TAG, "createFromInputStream(), failed decode", e);
@@ -96,6 +119,14 @@ public class Torrent {
 
     public int getFileLength() {
         return mFileLength;
+    }
+
+    public int getPieceLength() {
+        return mPieceLength;
+    }
+
+    public int getMaxIndex() {
+        return mPieceHashes.capacity() / PIECE_HASH_SIZE;
     }
 
     private static ArrayList<String> convertStringFromObject(Object value) throws InvalidClassException, UnsupportedEncodingException {
@@ -121,9 +152,11 @@ public class Torrent {
         return stringArrayList;
     }
 
-    private Torrent(@NonNull byte[] infoHash, @NonNull ArrayList<String> tackerList, int length) {
+    private Torrent(@NonNull byte[] infoHash, @NonNull ArrayList<String> tackerList, int length, int pieceLength, @NonNull ByteBuffer pieces) {
         mInfoHash = infoHash;
         mFileLength = length;
+        mPieceLength = pieceLength;
+        mPieceHashes = pieces;
         mTrackerList.addAll(tackerList);
     }
 }
