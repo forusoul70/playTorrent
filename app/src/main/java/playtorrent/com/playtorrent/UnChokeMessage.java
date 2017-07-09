@@ -15,4 +15,9 @@ public class UnChokeMessage implements IBitMessage {
         buffer.put((byte) Type.UNCHOKE.getValue());
         return buffer.array();
     }
+
+    @Override
+    public Type getType() {
+        return Type.UNCHOKE;
+    }
 }

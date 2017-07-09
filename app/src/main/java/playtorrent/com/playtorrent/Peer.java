@@ -91,7 +91,7 @@ public class Peer {
         mConnection.addConnectionListener(listener);
         try {
             HandshakeMessage handshake = new HandshakeMessage(infoHash, peerId);
-            mConnection.sendMessage(handshake.getMessage());
+            requestSendProtocolMessage(handshake);
             latch.await(1, TimeUnit.MINUTES);
 
             // validate handshake
@@ -113,11 +113,18 @@ public class Peer {
     }
 
     void requestSendInterestMessage() {
-        mConnection.sendMessage(new InterestedMessage().getMessage());
+        requestSendProtocolMessage(new InterestedMessage());
     }
 
     void requestSendRequestMessage(@NonNull Piece piece) {
-        mConnection.sendMessage(new RequestMessage(piece.getIndex(), piece.getOffset(), piece.getLength()).getMessage());
+        requestSendProtocolMessage(new RequestMessage(piece.getIndex(), piece.getOffset(), piece.getLength()));
+    }
+
+    private void requestSendProtocolMessage(@NonNull IBitMessage message) {
+        if (DEBUG) {
+            Log.i(TAG, "requestSendProtocolMessage(), [" + message.getType() + " ]");
+        }
+        mConnection.sendMessage(message.getMessage());
     }
 
     private void handleReceiveBytes(@NonNull byte[] receivedBytes) {

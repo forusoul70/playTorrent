@@ -1,6 +1,7 @@
 package playtorrent.com.playtorrent;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.VisibleForTesting;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
@@ -208,6 +209,15 @@ public class DownloadProcessor {
             }
             break;
         }
+    }
+
+    @VisibleForTesting()
+    public void connectLocalHostPeer() throws UnknownHostException, ConnectException {
+        // find local address
+        InetAddress local = InetAddress.getLocalHost();
+        Peer downloadPeer = new Peer(local.getHostAddress(), 49152);
+        mPeerMap.put(local.getHostAddress(), downloadPeer);
+        handFoundPeerList();
     }
 
     private Piece getNextDownloadPiece() {

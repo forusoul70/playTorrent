@@ -46,6 +46,11 @@ public class HandshakeMessage implements IBitMessage {
         }
     }
 
+    @Override
+    public Type getType() {
+        return Type.HAND_SHAKE;
+    }
+
     public static HandshakeMessage parseFromResponse(@NonNull ByteBuffer receivedHandshake) {
         int messageLength = receivedHandshake.get();
         if (messageLength + BASE_HANDSHAKE_LENGTH  > receivedHandshake.remaining() + 1) {

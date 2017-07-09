@@ -36,6 +36,11 @@ public class BitFieldMessage implements IBitMessage {
         return new byte[0];
     }
 
+    @Override
+    public Type getType() {
+        return Type.BIT_FIELD;
+    }
+
     public int cardinality() {
         int sum = 0;
         for (int bit : mBitSet) {

@@ -24,7 +24,7 @@ public class TestDownloadProcessor {
         DownloadProcessor peer = new DownloadProcessor(torrent);
         Assert.assertEquals(20, peer.getPeerId().length());
 
-        peer.start();
+        peer.connectLocalHostPeer();
 
         final CountDownLatch latch = new CountDownLatch(1);
         peer.setDownloadListener(new DownloadProcessor.DownloadListener() {

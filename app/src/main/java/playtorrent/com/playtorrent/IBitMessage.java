@@ -7,6 +7,7 @@ package playtorrent.com.playtorrent;
 public interface IBitMessage {
 
     public enum Type {
+        HAND_SHAKE(-3), // not protocol message
         INVALID(-2),
         CHOKE(0),
         UNCHOKE(1),
@@ -56,4 +57,6 @@ public interface IBitMessage {
     }
 
     byte[] getMessage();
+
+    Type getType();
 }

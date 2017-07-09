@@ -28,4 +28,9 @@ public class RequestMessage implements IBitMessage {
         buffer.putInt(mLength); // 4 bytes
         return buffer.array();
     }
+
+    @Override
+    public Type getType() {
+        return Type.REQUEST;
+    }
 }

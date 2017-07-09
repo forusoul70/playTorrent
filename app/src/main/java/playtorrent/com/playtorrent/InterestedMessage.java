@@ -16,4 +16,9 @@ public class InterestedMessage implements IBitMessage {
         buffer.put((byte) Type.INTERESTED.getValue());
         return buffer.array();
     }
+
+    @Override
+    public Type getType() {
+        return Type.INTERESTED;
+    }
 }
