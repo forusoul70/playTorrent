@@ -215,8 +215,9 @@ public class DownloadProcessor {
     public void connectLocalHostPeer() throws UnknownHostException, ConnectException {
         // find local address
         InetAddress local = InetAddress.getLocalHost();
-        Peer downloadPeer = new Peer(local.getHostAddress(), 49152);
+        Peer downloadPeer = new Peer("10.0.2.2", 49152);
         mPeerMap.put(local.getHostAddress(), downloadPeer);
+        downloadPeer.setPeerListener(mPeerEventListener);
         handFoundPeerList();
     }
 
