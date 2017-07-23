@@ -107,7 +107,7 @@ public class Torrent {
 
             // torrent name
             Object name = infoMap.get("name");
-            if (name == null || name instanceof String == false) {
+            if (name == null || name instanceof ByteBuffer == false) {
                 if (DEBUG) {
                     Log.e(TAG, "createFromInputStream(), failed to get name");
                 }
@@ -115,7 +115,7 @@ public class Torrent {
             }
 
             client = new Torrent(infoHash, trackerList, (Integer) length,
-                    (Integer) pieceLength, (ByteBuffer) pieceHash, (String) name);
+                    (Integer) pieceLength, (ByteBuffer) pieceHash, new String(((ByteBuffer)name).array(), "UTF-8"));
         } catch (Exception e) {
             if (DEBUG) {
                 Log.e(TAG, "createFromInputStream(), failed decode", e);
