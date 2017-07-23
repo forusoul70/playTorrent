@@ -1,5 +1,6 @@
 package playtorrent.com.playtorrent;
 
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.VisibleForTesting;
 import android.text.TextUtils;
@@ -35,11 +36,19 @@ public class DownloadProcessor {
     private static final boolean DEBUG = BuildConfig.DEBUG;
     private static final String TAG = "DownloadProcessor";
 
+    /** Default block fileLength is 2^14 bytes, or 16kB. */
+    public static final int DEFAULT_REQUEST_SIZE = 16384;
+
+    /** Max block request fileLength is 2^17 bytes, or 131kB. */
+    public static final int MAX_REQUEST_SIZE = 131072;
+
     private final Torrent mTorrent;
     private final String mPeerId;
 
     private final ConcurrentHashMap<String, Peer> mPeerMap = new ConcurrentHashMap<>();
-    private final SparseArray<Piece> mDownloadMap = new SparseArray<>();
+    private final SparseArray<DownloadPiece> mDownloadMap = new SparseArray<>();
+
+    private final AbsFileStorage mFileStorage;
 
     private DownloadListener mDownloadListener = null;
 
@@ -54,8 +63,12 @@ public class DownloadProcessor {
         for (int i = 0; i < maxIndex; i++) {
             int size = i != (maxIndex -1) ? pieceLength : mTorrent.getFileLength() % pieceLength;
             Piece piece = new Piece(i, i * pieceLength, size);
-            mDownloadMap.put(i, piece);
+            mDownloadMap.put(i, new DownloadPiece(piece));
         }
+
+        // Support single file storage yet
+        String savePath = Environment.getExternalStorageDirectory().getPath() + "/" + torrent.getName();
+        mFileStorage = new SingleFileStorage(torrent.getFileLength(), savePath);
     }
 
     public void setDownloadListener(DownloadListener listener) {
@@ -221,12 +234,12 @@ public class DownloadProcessor {
         handFoundPeerList();
     }
 
-    private Piece getNextDownloadPiece() {
+    private DownloadPiece getNextDownloadPiece() {
         synchronized (mDownloadMap) {
             int maxIndex = mTorrent.getMaxIndex();
             for (int i = 0; i < maxIndex; i++) {
-                Piece piece = mDownloadMap.get(i);
-                if (piece.getDownloadLength() == 0) {
+                DownloadPiece piece = mDownloadMap.get(i);
+                if (piece.getNextDownloadOffset() >= 0) {
                     return piece;
                 }
             }
@@ -240,15 +253,39 @@ public class DownloadProcessor {
             if (bitField.cardinality() > 0) {
                 peer.requestSendInterestMessage();
 
-                Piece piece = getNextDownloadPiece();
+                DownloadPiece piece = getNextDownloadPiece();
                 if (piece == null) {
                     if (DEBUG) {
                         Log.e(TAG, "onBitFiled(), Failed to find piece to download. Is finished download ?");
                     }
                     return;
                 }
-                peer.requestSendRequestMessage(piece);
+
+                int requestLength = Math.min(piece.getRemainDownloadLength(), DEFAULT_REQUEST_SIZE);
+                peer.requestSendRequestMessage(piece.getPiece(), piece.getNextDownloadOffset(), requestLength);
             }
         }
     };
+
+    private static class DownloadPiece {
+        private @NonNull final Piece mPiece;
+        private int mDownloadLength = 0; // thread safe ??
+
+        DownloadPiece(@NonNull Piece peer) {
+            mPiece = peer;
+        }
+
+        @NonNull
+        Piece getPiece() {
+            return mPiece;
+        }
+
+        int getNextDownloadOffset() {
+            return mPiece.getLength() <= mDownloadLength ? -1 : mDownloadLength + 1;
+        }
+
+        int getRemainDownloadLength() {
+            return mPiece.getLength() - mDownloadLength;
+        }
+    }
 }

@@ -27,12 +27,4 @@ public class Piece {
     public int getLength() {
         return length;
     }
-
-    public int getDownloadLength() {
-        return downloadLength;
-    }
-
-    public void setDownloadLength(int downloadLength) {
-        this.downloadLength = downloadLength;
-    }
 }

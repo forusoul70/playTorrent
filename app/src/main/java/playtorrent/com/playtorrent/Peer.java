@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class Peer {
     public interface PeerEventListener {
         void onBitFiled(@NonNull Peer peer, @NonNull BitFieldMessage bitField);
+        void onPiece();
     }
 
     private static final boolean DEBUG = BuildConfig.DEBUG;
@@ -116,8 +117,8 @@ public class Peer {
         requestSendProtocolMessage(new InterestedMessage());
     }
 
-    void requestSendRequestMessage(@NonNull Piece piece) {
-        requestSendProtocolMessage(new RequestMessage(piece.getIndex(), piece.getOffset(), piece.getLength()));
+    void requestSendRequestMessage(@NonNull Piece piece, int nextOffset, int requestLength) {
+        requestSendProtocolMessage(new RequestMessage(piece.getIndex(), nextOffset, requestLength));
     }
 
     private void requestSendProtocolMessage(@NonNull IBitMessage message) {

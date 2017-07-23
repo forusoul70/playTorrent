@@ -26,6 +26,7 @@ public class Torrent {
     private int mPieceLength = 0;
     private ByteBuffer mPieceHashes = null;
     private final ArrayList<String> mTrackerList = new ArrayList<>();
+    private final String mName;
 
     public static Torrent createFromInputStream(InputStream in) {
         Torrent client = null;
@@ -73,7 +74,11 @@ public class Torrent {
                 trackerList.add(tracker);
             }
 
-            // int file size
+            if (infoMap.containsKey("files")) {
+                throw new UnsupportedOperationException("We can't support multi files yet !! T.T");
+            }
+
+            // int file fileLength
             Object length = infoMap.get("length");
             if (length == null || length instanceof Integer == false) {
                 if (DEBUG) {
@@ -100,7 +105,17 @@ public class Torrent {
                 return null;
             }
 
-            client = new Torrent(infoHash, trackerList, (Integer) length, (Integer) pieceLength, (ByteBuffer) pieceHash);
+            // torrent name
+            Object name = infoMap.get("name");
+            if (name == null || name instanceof String == false) {
+                if (DEBUG) {
+                    Log.e(TAG, "createFromInputStream(), failed to get name");
+                }
+                return null;
+            }
+
+            client = new Torrent(infoHash, trackerList, (Integer) length,
+                    (Integer) pieceLength, (ByteBuffer) pieceHash, (String) name);
         } catch (Exception e) {
             if (DEBUG) {
                 Log.e(TAG, "createFromInputStream(), failed decode", e);
@@ -129,6 +144,11 @@ public class Torrent {
         return mPieceHashes.capacity() / PIECE_HASH_SIZE;
     }
 
+    @NonNull
+    public String getName() {
+        return mName;
+    }
+
     private static ArrayList<String> convertStringFromObject(Object value) throws InvalidClassException, UnsupportedEncodingException {
         if (value == null) {
             return null;
@@ -152,11 +172,14 @@ public class Torrent {
         return stringArrayList;
     }
 
-    private Torrent(@NonNull byte[] infoHash, @NonNull ArrayList<String> tackerList, int length, int pieceLength, @NonNull ByteBuffer pieces) {
+    private Torrent(@NonNull byte[] infoHash, @NonNull ArrayList<String> tackerList,
+                    int length, int pieceLength, @NonNull ByteBuffer pieces,
+                    @NonNull String name) {
         mInfoHash = infoHash;
         mFileLength = length;
         mPieceLength = pieceLength;
         mPieceHashes = pieces;
         mTrackerList.addAll(tackerList);
+        mName = name;
     }
 }
