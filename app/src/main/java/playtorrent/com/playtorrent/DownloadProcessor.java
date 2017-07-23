@@ -265,6 +265,11 @@ public class DownloadProcessor {
                 peer.requestSendRequestMessage(piece.getPiece(), piece.getNextDownloadOffset(), requestLength);
             }
         }
+
+        @Override
+        public void onPiece(@NonNull Peer peer, @NonNull PieceMessage pieceMessage) {
+            mFileStorage.write(pieceMessage.getBuffer(), pieceMessage.getOffset());
+        }
     };
 
     private static class DownloadPiece {

@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class Peer {
     public interface PeerEventListener {
         void onBitFiled(@NonNull Peer peer, @NonNull BitFieldMessage bitField);
-        void onPiece();
+        void onPiece(@NonNull Peer peer, @NonNull PieceMessage pieceMessage);
     }
 
     private static final boolean DEBUG = BuildConfig.DEBUG;
@@ -179,6 +179,16 @@ public class Peer {
             case BIT_FIELD:
                 mReceiveMessageService.submit(createHandleBitField(new BitFieldMessage(message)));
                 break;
+            case PIECE:
+                PieceMessage pieceMessage = PieceMessage.Companion.parse(message, length);
+                if (pieceMessage == null) {
+                    if (DEBUG) {
+                        Log.e(TAG, "Failed to parse piece message");
+                    }
+                    return;
+                }
+                mReceiveMessageService.submit(createHanddlePiece(pieceMessage));
+                break;
             default:
         }
     }
@@ -189,6 +199,17 @@ public class Peer {
             public void run() {
                 if (mListener != null) {
                     mListener.onBitFiled(Peer.this, bitField);
+                }
+            }
+        };
+    }
+
+    private Runnable createHanddlePiece(@NonNull final PieceMessage pieceMessage) {
+        return new Runnable() {
+            @Override
+            public void run() {
+                if (mListener != null) {
+                    mListener.onPiece(Peer.this, pieceMessage);
                 }
             }
         };
