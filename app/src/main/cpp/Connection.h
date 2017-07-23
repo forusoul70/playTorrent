@@ -34,10 +34,6 @@ namespace PlayTorrent {
         ~Message() {
             delete[] bytesPtr;
         }
-
-        void test() {
-
-        }
     };
 
     class ConnectionCallback {

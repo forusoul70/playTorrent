@@ -118,7 +118,9 @@ Java_playtorrent_com_playtorrent_Connection_requestSendMessage(JNIEnv *env, jobj
         return;
     }
 
-    connection->requestSendMessage((uint8_t*)message, length);
+    uint8_t* clone = new uint8_t[length];
+    memcpy(clone, message, sizeof(uint8_t) * length);
 
+    connection->requestSendMessage(clone, length);
     env->ReleaseByteArrayElements(message_, message, 0);
 }
