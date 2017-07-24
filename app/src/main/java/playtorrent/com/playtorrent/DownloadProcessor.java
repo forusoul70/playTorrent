@@ -8,6 +8,7 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
@@ -52,7 +53,7 @@ public class DownloadProcessor {
 
     private DownloadListener mDownloadListener = null;
 
-    public DownloadProcessor(@NonNull Torrent torrent) {
+    public DownloadProcessor(@NonNull Torrent torrent) throws IOException {
         mTorrent = torrent;
         String uuid[] = UUID.randomUUID().toString().split("-");
         mPeerId = uuid[0] + uuid[1] + uuid[2] + uuid[3]; // length 20;
@@ -67,8 +68,13 @@ public class DownloadProcessor {
         }
 
         // Support single file storage yet
-        String savePath = Environment.getExternalStorageDirectory().getPath() + "/" + torrent.getName();
-        mFileStorage = new SingleFileStorage(torrent.getFileLength(), savePath);
+        File saveFile = new File(Environment.getExternalStorageDirectory().getPath() + "/" + torrent.getName());
+        if (saveFile.exists() == false) {
+            if (saveFile.createNewFile() == false) {
+                throw new IOException("Failed to make file [" + saveFile.getPath() + "]");
+            }
+        }
+        mFileStorage = new SingleFileStorage(torrent.getFileLength(), saveFile.getPath());
     }
 
     public void setDownloadListener(DownloadListener listener) {
