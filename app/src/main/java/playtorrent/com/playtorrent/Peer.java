@@ -137,7 +137,7 @@ public class Peer {
 
             if (mReceivedMessageBuffer.size() < 4) {
                 if (DEBUG) {
-                    Log.e(TAG, "handleReceiveBytes(), Message buffer is empty");
+                    Log.e(TAG, "handleReceiveBytes(), Message dose not have message length");
                 }
                 return;
             }
@@ -151,7 +151,7 @@ public class Peer {
             int totalLength = length + 4;
             if (mReceivedMessageBuffer.size() < totalLength) {
                 if (DEBUG) {
-                    Log.e(TAG, "handleReceiveBytes(), Message buffer is empty");
+                    Log.e(TAG, "handleReceiveBytes(), Message length is " + length + ", but total length is " + totalLength);
                 }
                 return;
             }
@@ -187,7 +187,7 @@ public class Peer {
                     }
                     return;
                 }
-                mReceiveMessageService.submit(createHanddlePiece(pieceMessage));
+                mReceiveMessageService.submit(createHandlePiece(pieceMessage));
                 break;
             default:
         }
@@ -204,7 +204,7 @@ public class Peer {
         };
     }
 
-    private Runnable createHanddlePiece(@NonNull final PieceMessage pieceMessage) {
+    private Runnable createHandlePiece(@NonNull final PieceMessage pieceMessage) {
         return new Runnable() {
             @Override
             public void run() {

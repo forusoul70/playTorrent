@@ -288,7 +288,7 @@ namespace PlayTorrent {
         if (mCallback != nullptr) {
             // clone buffer
             uint8_t *clone = new uint8_t[readBytes];
-            memcpy(clone, mReceiveBuffer, (size_t) readBytes);
+            memcpy(clone, mReceiveBuffer, sizeof(uint8_t) * readBytes);
             mCallback->onReceived(clone, (size_t) readBytes);
         }
     }
