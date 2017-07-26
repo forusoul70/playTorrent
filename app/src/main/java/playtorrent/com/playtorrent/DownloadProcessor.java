@@ -253,28 +253,47 @@ public class DownloadProcessor {
         return null;
     }
 
+    private void executeNextRequest(@NonNull Peer peer) {
+        peer.requestSendInterestMessage();
+        DownloadPiece piece = getNextDownloadPiece();
+        if (piece == null) {
+            if (DEBUG) {
+                Log.e(TAG, "onBitFiled(), Failed to find piece to download. Is finished download ?");
+            }
+            return;
+        }
+
+        int requestLength = Math.min(piece.getRemainDownloadLength(), DEFAULT_REQUEST_SIZE);
+        peer.requestSendRequestMessage(piece.getPiece(), piece.getNextDownloadOffset(), requestLength);
+    }
+
     private final Peer.PeerEventListener mPeerEventListener = new Peer.PeerEventListener() {
         @Override
         public void onBitFiled(@NonNull Peer peer, @NonNull BitFieldMessage bitField) {
-            if (bitField.cardinality() > 0) {
-                peer.requestSendInterestMessage();
-
-                DownloadPiece piece = getNextDownloadPiece();
-                if (piece == null) {
-                    if (DEBUG) {
-                        Log.e(TAG, "onBitFiled(), Failed to find piece to download. Is finished download ?");
-                    }
-                    return;
-                }
-
-                int requestLength = Math.min(piece.getRemainDownloadLength(), DEFAULT_REQUEST_SIZE);
-                peer.requestSendRequestMessage(piece.getPiece(), piece.getNextDownloadOffset(), requestLength);
+            if (peer.isChocked() == false && bitField.cardinality() > 0) {
+                executeNextRequest(peer);
             }
         }
 
         @Override
         public void onPiece(@NonNull Peer peer, @NonNull PieceMessage pieceMessage) {
+
             mFileStorage.write(pieceMessage.getBuffer(), pieceMessage.getOffset());
+        }
+
+        @Override
+        public void onChockStateChanged(@NonNull Peer peer, boolean isChocked) {
+            if (isChocked == false) {
+                BitFieldMessage bitField = peer.getReceivedBitfielMessage();
+                if (bitField == null) {
+                    Log.i(TAG, "onChockStateChanged(), unchocked but should wait bit field message");
+                    return;
+                }
+
+                if (bitField.cardinality() > 0) {
+                    executeNextRequest(peer);
+                }
+            }
         }
     };
 

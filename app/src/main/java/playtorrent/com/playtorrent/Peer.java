@@ -1,6 +1,7 @@
 package playtorrent.com.playtorrent;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
 import android.util.Log;
 
@@ -23,6 +24,7 @@ public class Peer {
     public interface PeerEventListener {
         void onBitFiled(@NonNull Peer peer, @NonNull BitFieldMessage bitField);
         void onPiece(@NonNull Peer peer, @NonNull PieceMessage pieceMessage);
+        void onChockStateChanged(@NonNull Peer peer, boolean isChocked);
     }
 
     private static final boolean DEBUG = BuildConfig.DEBUG;
@@ -34,6 +36,9 @@ public class Peer {
     // received message thread
     private final ArrayList<Byte> mReceivedMessageBuffer;
     private final ExecutorService mReceiveMessageService;
+
+    private BitFieldMessage mReceivedBitfielMessage = null;
+    private boolean mIsChocked = true;
 
     private PeerEventListener mListener = null;
 
@@ -113,6 +118,15 @@ public class Peer {
         }
     }
 
+    public boolean isChocked() {
+        return mIsChocked;
+    }
+
+    @Nullable
+    public BitFieldMessage getReceivedBitfielMessage() {
+        return mReceivedBitfielMessage;
+    }
+
     void requestSendInterestMessage() {
         requestSendProtocolMessage(new InterestedMessage());
     }
@@ -174,7 +188,11 @@ public class Peer {
             Log.i(TAG, "handleReceiveBytes() type = " + type + " , length = " + length);
         }
         switch (type) {
+            case CHOKE:
+                mReceiveMessageService.submit(createHandleChocked(new ChockMessage()));
+                break;
             case UNCHOKE:
+                mReceiveMessageService.submit(createHandleUnchocked(new UnChokeMessage()));
                 break;
             case BIT_FIELD:
                 mReceiveMessageService.submit(createHandleBitField(new BitFieldMessage(message)));
@@ -191,6 +209,34 @@ public class Peer {
                 break;
             default:
         }
+    }
+
+    private Runnable createHandleChocked(@NonNull final ChockMessage chockMessage) {
+        return new Runnable() {
+            @Override
+            public void run() {
+                if (mIsChocked == false) {
+                    mIsChocked = true;
+                    if (mListener != null) {
+                        mListener.onChockStateChanged(Peer.this, true);
+                    }
+                }
+            }
+        };
+    }
+
+    private Runnable createHandleUnchocked(@NonNull final UnChokeMessage unChokeMessage) {
+        return new Runnable() {
+            @Override
+            public void run() {
+                if (mIsChocked == true) {
+                    mIsChocked = false;
+                    if (mListener != null) {
+                        mListener.onChockStateChanged(Peer.this, false);
+                    }
+                }
+            }
+        };
     }
 
     private Runnable createHandleBitField(@NonNull final BitFieldMessage bitField) {

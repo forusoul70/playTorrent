@@ -282,7 +282,8 @@ namespace PlayTorrent {
 
         ssize_t readBytes = recv(mSocket, (void*) mReceiveBuffer, READ_BUFFER_SIZE, 0);
         if (readBytes < 0) {
-            LOGE(TAG, "onReceivedFromSocket(), Failed to read message from socket");
+            LOGE(TAG, "onReceivedFromSocket(), Failed to read message from socket [%d]", errno);
+            return;
         }
 
         if (mCallback != nullptr) {
