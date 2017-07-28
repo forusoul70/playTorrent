@@ -284,7 +284,7 @@ public class DownloadProcessor {
         @Override
         public void onChockStateChanged(@NonNull Peer peer, boolean isChocked) {
             if (isChocked == false) {
-                BitFieldMessage bitField = peer.getReceivedBitfielMessage();
+                BitFieldMessage bitField = peer.getReceivedBitFieldMessage();
                 if (bitField == null) {
                     Log.i(TAG, "onChockStateChanged(), unchocked but should wait bit field message");
                     return;

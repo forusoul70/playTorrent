@@ -37,7 +37,7 @@ public class Peer {
     private final ArrayList<Byte> mReceivedMessageBuffer;
     private final ExecutorService mReceiveMessageService;
 
-    private BitFieldMessage mReceivedBitfielMessage = null;
+    private BitFieldMessage mReceivedBitFieldMessage = null;
     private boolean mIsChocked = true;
 
     private PeerEventListener mListener = null;
@@ -123,8 +123,8 @@ public class Peer {
     }
 
     @Nullable
-    public BitFieldMessage getReceivedBitfielMessage() {
-        return mReceivedBitfielMessage;
+    public BitFieldMessage getReceivedBitFieldMessage() {
+        return mReceivedBitFieldMessage;
     }
 
     void requestSendInterestMessage() {
@@ -165,7 +165,7 @@ public class Peer {
             int totalLength = length + 4;
             if (mReceivedMessageBuffer.size() < totalLength) {
                 if (DEBUG) {
-                    Log.e(TAG, "handleReceiveBytes(), Message length is " + length + ", but total length is " + totalLength);
+                    Log.e(TAG, "handleReceiveBytes(), Buffer size is " + mReceivedMessageBuffer.size() + ", but total length is " + totalLength);
                 }
                 return;
             }
@@ -192,7 +192,7 @@ public class Peer {
                 mReceiveMessageService.submit(createHandleChocked(new ChockMessage()));
                 break;
             case UNCHOKE:
-                mReceiveMessageService.submit(createHandleUnchocked(new UnChokeMessage()));
+                mReceiveMessageService.submit(createHandleUnChocked(new UnChokeMessage()));
                 break;
             case BIT_FIELD:
                 mReceiveMessageService.submit(createHandleBitField(new BitFieldMessage(message)));
@@ -225,7 +225,7 @@ public class Peer {
         };
     }
 
-    private Runnable createHandleUnchocked(@NonNull final UnChokeMessage unChokeMessage) {
+    private Runnable createHandleUnChocked(@NonNull final UnChokeMessage unChokeMessage) {
         return new Runnable() {
             @Override
             public void run() {
@@ -243,6 +243,7 @@ public class Peer {
         return new Runnable() {
             @Override
             public void run() {
+                mReceivedBitFieldMessage = bitField;
                 if (mListener != null) {
                     mListener.onBitFiled(Peer.this, bitField);
                 }
