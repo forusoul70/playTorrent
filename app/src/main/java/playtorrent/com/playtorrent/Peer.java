@@ -162,7 +162,7 @@ public class Peer {
                     mReceivedMessageBuffer.get(2), mReceivedMessageBuffer.get(3),
             });
 
-            int totalLength = length + 4;
+            int totalLength = length + 4 + 1; // 4 bytes mean length field and 1 byte means message type
             if (mReceivedMessageBuffer.size() < totalLength) {
                 if (DEBUG) {
                     Log.e(TAG, "handleReceiveBytes(), Buffer size is " + mReceivedMessageBuffer.size() + ", but total length is " + totalLength);

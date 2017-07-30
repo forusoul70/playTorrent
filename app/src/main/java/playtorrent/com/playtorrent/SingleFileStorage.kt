@@ -8,7 +8,7 @@ import java.io.RandomAccessFile
  */
 
 class SingleFileStorage(size:Long, path:String): AbsFileStorage(size) {
-    private lateinit var file:RandomAccessFile
+    private val file:RandomAccessFile
 
     init {
         val targetFile = File(path)

@@ -277,8 +277,10 @@ public class DownloadProcessor {
 
         @Override
         public void onPiece(@NonNull Peer peer, @NonNull PieceMessage pieceMessage) {
-
             mFileStorage.write(pieceMessage.getBuffer(), pieceMessage.getOffset());
+            if (DEBUG) {
+                Log.d(TAG, String.format("Write piece %d to %d", pieceMessage.getOffset(), pieceMessage.getBuffer().length));
+            }
         }
 
         @Override
