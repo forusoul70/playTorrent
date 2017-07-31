@@ -162,7 +162,7 @@ public class Peer {
                     mReceivedMessageBuffer.get(2), mReceivedMessageBuffer.get(3),
             });
 
-            int totalLength = length + 4 + 1; // 4 bytes mean length field and 1 byte means message type
+            int totalLength = length + 4; // 4 bytes mean length field.
             if (mReceivedMessageBuffer.size() < totalLength) {
                 if (DEBUG) {
                     Log.e(TAG, "handleReceiveBytes(), Buffer size is " + mReceivedMessageBuffer.size() + ", but total length is " + totalLength);
@@ -182,7 +182,7 @@ public class Peer {
     }
 
     private void handlePeerMessage(@NonNull ByteBuffer message) {
-        int length = message.getInt();
+        int length = message.getInt(); // length contains type
         IBitMessage.Type type = IBitMessage.Type.byValue(message.get());
         if (DEBUG) {
             Log.i(TAG, "handleReceiveBytes() type = " + type + " , length = " + length);
@@ -198,7 +198,7 @@ public class Peer {
                 mReceiveMessageService.submit(createHandleBitField(new BitFieldMessage(message)));
                 break;
             case PIECE:
-                PieceMessage pieceMessage = PieceMessage.Companion.parse(message, length);
+                PieceMessage pieceMessage = PieceMessage.Companion.parse(message, length - 1);
                 if (pieceMessage == null) {
                     if (DEBUG) {
                         Log.e(TAG, "Failed to parse piece message");
