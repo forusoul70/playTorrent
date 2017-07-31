@@ -20,10 +20,21 @@ class PieceMessage(val pieceIndex:Int, val offset:Int, val buffer:ByteArray): IB
                 return null
             }
 
+            if (message.remaining() != length) {
+                if (DEBUG) {
+                    Log.e(TAG, "Expected bytes is $length but remaining is ${message.remaining()}")
+                }
+                return null
+            }
+
             val pieceIndex = message.int
             val offset = message.int
-            val buffer = ByteArray(length - BASE_MESSAGE_LENGTH)
-            message.get(buffer, BASE_MESSAGE_LENGTH, length)
+            val buffer = ByteArray(message.remaining())
+            message.get(buffer, 0, message.remaining())
+
+            if (DEBUG) {
+                Log.d(TAG, "parsed finished. Payload length is ${buffer.size}")
+            }
 
             return PieceMessage(pieceIndex, offset, buffer)
         }
