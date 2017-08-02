@@ -4,6 +4,8 @@ import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -64,11 +66,18 @@ public class ByteUtils {
         return null;
     }
 
-    public static int get32Int(@NonNull byte[] bytes) {
+    public static int getInt32(@NonNull byte[] bytes) {
         return bytes[3] & 0xff |
                 (bytes[2] & 0xff) << 8 |
                 (bytes[1] & 0xff) << 16 |
                 (bytes[0] & 0xff) << 24;
+    }
+
+    public static void writeInt32(@NonNull OutputStream os, int value) throws IOException {
+        os.write((value >> 24) & 0xff);
+        os.write((value >> 16) & 0xff);
+        os.write((value >> 8) & 0xff);
+        os.write(value & 0xff);
     }
 
     public static byte[] toArray(@NonNull ArrayList<Byte> list, int length) {

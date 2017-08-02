@@ -157,7 +157,7 @@ public class Peer {
             }
 
             // validate message length
-            int length = ByteUtils.get32Int(new byte[] {
+            int length = ByteUtils.getInt32(new byte[] {
                     mReceivedMessageBuffer.get(0), mReceivedMessageBuffer.get(1),
                     mReceivedMessageBuffer.get(2), mReceivedMessageBuffer.get(3),
             });

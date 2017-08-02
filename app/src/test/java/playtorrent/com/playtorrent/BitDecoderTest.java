@@ -10,7 +10,7 @@ import static org.junit.Assert.assertEquals;
 public class BitDecoderTest {
     @Test
     public void byteIntTest() {
-        int length = ByteUtils.get32Int(new byte[]{0, 0, 1, (byte) 0x81});
+        int length = ByteUtils.getInt32(new byte[]{0, 0, 1, (byte) 0x81});
         assertEquals(385, length);
     }
 }

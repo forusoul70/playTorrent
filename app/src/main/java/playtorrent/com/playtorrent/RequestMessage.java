@@ -1,6 +1,7 @@
 package playtorrent.com.playtorrent;
 
-import java.nio.ByteBuffer;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 /**
  * Request message
@@ -20,13 +21,18 @@ public class RequestMessage implements IBitMessage {
 
     @Override
     public byte[] getMessage() {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(4 + 13);
-        buffer.putInt(13); // 4 bytes
-        buffer.put((byte) Type.REQUEST.getValue()); // 1 byte
-        buffer.putInt(mIndex); // 4 bytes
-        buffer.putInt(mOffset); // 4 bytes
-        buffer.putInt(mLength); // 4 bytes
-        return buffer.array();
+        try {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            ByteUtils.writeInt32(buffer, 13);
+            buffer.write((byte) Type.REQUEST.getValue());// 1 byte
+            ByteUtils.writeInt32(buffer,mIndex); // 4 bytes
+            ByteUtils.writeInt32(buffer,mOffset); // 4 bytes
+            ByteUtils.writeInt32(buffer,mLength); // 4 bytes
+            return buffer.toByteArray();
+        } catch (IOException ignore) {
+
+        }
+        return new byte[0];
     }
 
     @Override
