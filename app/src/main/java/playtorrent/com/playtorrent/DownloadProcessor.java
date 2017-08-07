@@ -253,7 +253,21 @@ public class DownloadProcessor {
         return null;
     }
 
-    private void executeNextRequest(@NonNull Peer peer) {
+    private void executeNextPiece(@NonNull Peer peer) {
+        BitFieldMessage bitField = peer.getReceivedBitFieldMessage();
+        if (bitField == null) {
+            if (DEBUG) {
+                Log.i(TAG, "onChockStateChanged(), unchocked but should wait bit field message");
+            }
+            return;
+        }
+
+        if (bitField.cardinality() > 0) {
+            requestPiece(peer);
+        }
+    }
+
+    private void requestPiece(@NonNull Peer peer) {
         peer.requestSendInterestMessage();
         DownloadPiece piece = getNextDownloadPiece();
         if (piece == null) {
@@ -271,7 +285,7 @@ public class DownloadProcessor {
         @Override
         public void onBitFiled(@NonNull Peer peer, @NonNull BitFieldMessage bitField) {
             if (peer.isChocked() == false && bitField.cardinality() > 0) {
-                executeNextRequest(peer);
+                requestPiece(peer);
             }
         }
 
@@ -281,20 +295,13 @@ public class DownloadProcessor {
             if (DEBUG) {
                 Log.d(TAG, String.format("Write piece %d to %d", pieceMessage.getOffset(), pieceMessage.getBuffer().length));
             }
+            executeNextPiece(peer);
         }
 
         @Override
         public void onChockStateChanged(@NonNull Peer peer, boolean isChocked) {
             if (isChocked == false) {
-                BitFieldMessage bitField = peer.getReceivedBitFieldMessage();
-                if (bitField == null) {
-                    Log.i(TAG, "onChockStateChanged(), unchocked but should wait bit field message");
-                    return;
-                }
-
-                if (bitField.cardinality() > 0) {
-                    executeNextRequest(peer);
-                }
+                executeNextPiece(peer);
             }
         }
     };
@@ -313,7 +320,7 @@ public class DownloadProcessor {
         }
 
         int getNextDownloadOffset() {
-            return mPiece.getLength() <= mDownloadLength ? -1 : mDownloadLength + 1;
+            return mPiece.getLength() <= mDownloadLength ? -1 : (mDownloadLength == 0 ? 0 : mDownloadLength + 1);
         }
 
         int getRemainDownloadLength() {
