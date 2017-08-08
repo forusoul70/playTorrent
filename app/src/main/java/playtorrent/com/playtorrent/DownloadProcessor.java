@@ -268,7 +268,6 @@ public class DownloadProcessor {
     }
 
     private void requestPiece(@NonNull Peer peer) {
-        peer.requestSendInterestMessage();
         DownloadPiece piece = getNextDownloadPiece();
         if (piece == null) {
             if (DEBUG) {
@@ -284,23 +283,39 @@ public class DownloadProcessor {
     private final Peer.PeerEventListener mPeerEventListener = new Peer.PeerEventListener() {
         @Override
         public void onBitFiled(@NonNull Peer peer, @NonNull BitFieldMessage bitField) {
-            if (peer.isChocked() == false && bitField.cardinality() > 0) {
-                requestPiece(peer);
+            if (bitField.cardinality() > 0 ) {
+                peer.requestSendInterestMessage();
+            }
+
+            if (peer.isChocked() == false) {
+                executeNextPiece(peer);
             }
         }
 
         @Override
         public void onPiece(@NonNull Peer peer, @NonNull PieceMessage pieceMessage) {
-            mFileStorage.write(pieceMessage.getBuffer(), pieceMessage.getOffset());
-            if (DEBUG) {
-                Log.d(TAG, String.format("Write piece %d to %d", pieceMessage.getOffset(), pieceMessage.getBuffer().length));
+            synchronized (mDownloadMap) {
+                DownloadPiece downloadPiece = mDownloadMap.get(pieceMessage.getPieceIndex());
+                if (downloadPiece == null) {
+                    if (DEBUG) {
+                        Log.e(TAG, "We got piece message but invalid index !! [" + pieceMessage.getPieceIndex() + "]");
+                    }
+                    return;
+                }
+
+                int pieceLength = pieceMessage.getBuffer().length;
+                mFileStorage.write(pieceMessage.getBuffer(), pieceMessage.getOffset());
+                if (DEBUG) {
+                    Log.d(TAG, String.format("Write piece %d to %d", pieceMessage.getOffset(), pieceLength));
+                }
+                downloadPiece.mDownloadLength += pieceLength;
             }
             executeNextPiece(peer);
         }
 
         @Override
         public void onChockStateChanged(@NonNull Peer peer, boolean isChocked) {
-            if (isChocked == false) {
+            if (peer.isChocked() == false) {
                 executeNextPiece(peer);
             }
         }

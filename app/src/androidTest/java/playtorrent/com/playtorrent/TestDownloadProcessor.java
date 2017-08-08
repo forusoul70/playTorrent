@@ -28,7 +28,9 @@ public class TestDownloadProcessor {
     @Test
     public void testDownloadPeer() throws IOException, InterruptedException {
         Context appContext = InstrumentationRegistry.getTargetContext();
-        Torrent torrent = Torrent.createFromInputStream(appContext.getAssets().open("images.jpg.torrent"));
+        Torrent torrent = Torrent.createFromInputStream(appContext.getAssets().open("ubuntu-17.04-server-amd64.iso.torrent"));
+        Assert.assertNotNull(torrent);
+
         DownloadProcessor peer = new DownloadProcessor(torrent);
         Assert.assertEquals(20, peer.getPeerId().length());
 
