@@ -5,5 +5,5 @@ package playtorrent.com.playtorrent
 */
 
 abstract class AbsFileStorage(val fileLength:Long) {
-    abstract fun write(bytes:ByteArray, offset:Int)
+    abstract fun write(bytes:ByteArray, offset:Long)
 }

@@ -6,7 +6,7 @@ import java.nio.ByteBuffer
 /**
  * Piece message
  */
-class PieceMessage(val pieceIndex:Int, val offset:Int, val buffer:ByteArray): IBitMessage {
+class PieceMessage(val pieceIndex:Int, val offset:Long, val buffer:ByteArray): IBitMessage {
     companion object {
         private val TAG = "PieceMessage"
         private val DEBUG = BuildConfig.DEBUG
@@ -36,7 +36,7 @@ class PieceMessage(val pieceIndex:Int, val offset:Int, val buffer:ByteArray): IB
                 Log.d(TAG, "parsed finished. Payload length is ${buffer.size}")
             }
 
-            return PieceMessage(pieceIndex, offset, buffer)
+            return PieceMessage(pieceIndex, offset.toLong(), buffer)
         }
     }
 
@@ -45,7 +45,7 @@ class PieceMessage(val pieceIndex:Int, val offset:Int, val buffer:ByteArray): IB
         message.putInt(13) // 4 bytes
         message.put(IBitMessage.Type.PIECE.value.toByte()) // 1 byte
         message.putInt(pieceIndex) // 4 bytes
-        message.putInt(offset) // 4 bytes
+        message.putInt(offset.toInt()) // 4 bytes
         message.putInt(buffer.size)
         return message.array()
     }

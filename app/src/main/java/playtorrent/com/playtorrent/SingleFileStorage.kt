@@ -1,6 +1,7 @@
 package playtorrent.com.playtorrent
 
 import java.io.File
+import java.io.IOException
 import java.io.RandomAccessFile
 
 /**
@@ -18,8 +19,9 @@ class SingleFileStorage(size:Long, path:String): AbsFileStorage(size) {
         }
     }
 
-
-    override fun write(bytes: ByteArray, offset: Int) {
-        file.write(bytes, offset, bytes.size)
+    @Throws(IOException::class)
+    override fun write(bytes: ByteArray, offset: Long) {
+        file.seek(offset)
+        file.write(bytes, 0, bytes.size)
     }
 }
