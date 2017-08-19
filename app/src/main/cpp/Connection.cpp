@@ -238,6 +238,7 @@ namespace PlayTorrent {
                 LOGE(TAG, "Failed to send data to socket");
                 return;
             }
+            LOGD(TAG, "Send %d bytes success", count);
             remainLength -= count;
         }
     }

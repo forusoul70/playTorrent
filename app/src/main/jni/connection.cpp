@@ -18,6 +18,7 @@ public:
         jclass cls = env->GetObjectClass(mJavaCallback);
         jmethodID onConnectionLost = env->GetMethodID(cls, "onConnectionLost", "()V");
         env->CallVoidMethod(mJavaCallback, onConnectionLost);
+        env->DeleteLocalRef(cls);
     }
 
     virtual void onReceived(uint8_t* received, size_t length) {
@@ -25,17 +26,28 @@ public:
             return;
         }
 
+        // get env
         JNIEnv* env = getEnv();
+
+        // Create new java bytes array reference
         jbyteArray jReceived = env->NewByteArray(length);
         if (jReceived == nullptr) {
             LOGE(TAG, "Failed to allocate java buffer [%d]", length);
             return;
         }
-        env->SetByteArrayRegion(jReceived, 0, length, reinterpret_cast<jbyte*>(received));
+        // Set data region to java bytes array
+        jbyte* javaBytes = env->GetByteArrayElements(jReceived, NULL);
+        env->SetByteArrayRegion(jReceived, 0, length, (const jbyte *) received);
 
+        // call java callback function
         jclass cls = env->GetObjectClass(mJavaCallback);
         jmethodID onReceived = env->GetMethodID(cls, "onReceived", "([B)V");
         env->CallVoidMethod(mJavaCallback, onReceived, jReceived);
+        env->DeleteLocalRef(cls);
+
+        // Release local reference
+        env->ReleaseByteArrayElements(jReceived, javaBytes, 0);
+        env->DeleteLocalRef(jReceived);
     }
 
     virtual ~JavaConnectionCallback() {

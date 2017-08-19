@@ -335,7 +335,7 @@ public class DownloadProcessor {
         }
 
         int getNextDownloadOffset() {
-            return mPiece.getLength() <= mDownloadLength ? -1 : (mDownloadLength == 0 ? 0 : mDownloadLength + 1);
+            return mPiece.getLength() <= mDownloadLength ? -1 : Math.max(0, mDownloadLength -1);
         }
 
         int getRemainDownloadLength() {
