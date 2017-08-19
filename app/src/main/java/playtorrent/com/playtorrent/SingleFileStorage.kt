@@ -10,6 +10,7 @@ import java.io.RandomAccessFile
 
 class SingleFileStorage(size:Long, path:String): AbsFileStorage(size) {
     private val file:RandomAccessFile
+    private val lock: Any = Object()
 
     init {
         val targetFile = File(path)
@@ -21,7 +22,21 @@ class SingleFileStorage(size:Long, path:String): AbsFileStorage(size) {
 
     @Throws(IOException::class)
     override fun write(bytes: ByteArray, offset: Long) {
-        file.seek(offset)
-        file.write(bytes, 0, bytes.size)
+        synchronized(lock) {
+            file.seek(offset)
+            file.write(bytes, 0, bytes.size)
+        }
+    }
+
+    @Throws(IOException::class)
+    override fun get(offset: Long, length: Int): ByteArray {
+        val buffer = ByteArray(length)
+        synchronized(lock) {
+            file.seek(offset)
+            if (kotlin.run { file.read(buffer) != length}) {
+                throw IOException("Failed to read $length")
+            }
+        }
+        return buffer
     }
 }

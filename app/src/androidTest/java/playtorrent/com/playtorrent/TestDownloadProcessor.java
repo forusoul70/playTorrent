@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
+import android.util.Log;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -28,7 +29,7 @@ public class TestDownloadProcessor {
     @Test
     public void testDownloadPeer() throws IOException, InterruptedException {
         Context appContext = InstrumentationRegistry.getTargetContext();
-        Torrent torrent = Torrent.createFromInputStream(appContext.getAssets().open("ubuntu-17.04-server-amd64.iso.torrent"));
+        Torrent torrent = Torrent.createFromInputStream(appContext.getAssets().open("test.torrent"));
         Assert.assertNotNull(torrent);
 
         DownloadProcessor peer = new DownloadProcessor(torrent);
@@ -40,7 +41,13 @@ public class TestDownloadProcessor {
         peer.setDownloadListener(new DownloadProcessor.DownloadListener() {
             @Override
             public void onDownloadStarted() {
+                Log.d("TestDownloadProcessor", "Started");
+            }
+
+            @Override
+            public void onDownloadFinished() {
                 latch.countDown();
+                Log.i("TestDownloadProcessor", "Finished");
             }
         });
         latch.await();

@@ -14,7 +14,7 @@ public class CipherUtils {
     private static final boolean DEBUG = BuildConfig.DEBUG;
     private static final String TAG = "CipherUtils";
 
-    public static byte[] sha1(byte data[]) {
+    public static byte[] sha1(byte data[]) { // 20 bytes
         if (data == null || data.length == 0) {
             return null;
         }

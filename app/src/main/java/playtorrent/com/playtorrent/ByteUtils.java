@@ -1,6 +1,7 @@
 package playtorrent.com.playtorrent;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -86,5 +87,27 @@ public class ByteUtils {
             array[i] = list.get(i);
         }
         return array;
+    }
+
+    public static boolean isEqual(@Nullable byte[] a, @Nullable byte[] b) {
+        if (a == null && b == null) { // ???
+            return true;
+        }
+
+        if ((a != null && b == null) || (a == null && b != null)) {
+            return false;
+        }
+
+        if (a.length != b.length) {
+            return false;
+        }
+
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

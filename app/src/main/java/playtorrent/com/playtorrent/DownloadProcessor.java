@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DownloadProcessor {
     public interface DownloadListener {
         void onDownloadStarted();
+        void onDownloadFinished();
     }
 
     private static final boolean DEBUG = BuildConfig.DEBUG;
@@ -59,7 +60,7 @@ public class DownloadProcessor {
         mPeerId = uuid[0] + uuid[1] + uuid[2] + uuid[3]; // length 20;
 
         // init piece array
-        int maxIndex = mTorrent.getMaxIndex();
+        int maxIndex = mTorrent.getPiecesCounts();
         int pieceLength = mTorrent.getPieceLength();
         for (int i = 0; i < maxIndex; i++) {
             int size = i != (maxIndex -1) ? pieceLength : mTorrent.getFileLength() % pieceLength;
@@ -69,16 +70,31 @@ public class DownloadProcessor {
 
         // Support single file storage yet
         File saveFile = new File(Environment.getExternalStorageDirectory().getPath() + "/" + torrent.getName());
-        if (saveFile.exists() == false) {
-            if (saveFile.createNewFile() == false) {
-                throw new IOException("Failed to make file [" + saveFile.getPath() + "]");
-            }
-        }
         mFileStorage = new SingleFileStorage(torrent.getFileLength(), saveFile.getPath());
+        checkDownloadHashes();
     }
 
     public void setDownloadListener(DownloadListener listener) {
         mDownloadListener = listener;
+    }
+
+    private void checkDownloadHashes() throws IOException {
+        synchronized (mDownloadMap) {
+            for (int i = 0; i < mTorrent.getPiecesCounts(); i++) {
+                byte[] hash = mTorrent.getPieceHash(i);
+                if (hash == null) {
+                    throw new RuntimeException("Failed to load piece hash [" + i + "]");
+                }
+                byte[] foundHash = CipherUtils.sha1(mFileStorage.get(i * Torrent.PIECE_HASH_SIZE, Torrent.PIECE_HASH_SIZE));
+                if (ByteUtils.isEqual(hash, foundHash)) {
+                    if (DEBUG) {
+                        Log.d(TAG, "Piece [" + i + "] has been downloaded");
+                    }
+                    DownloadPiece piece = mDownloadMap.get(i);
+                    piece.setDownloadCompleted();
+                }
+            }
+        }
     }
 
     public void start() {
@@ -228,6 +244,10 @@ public class DownloadProcessor {
             }
             break;
         }
+
+        if (mDownloadListener != null) {
+            mDownloadListener.onDownloadStarted();
+        }
     }
 
     @VisibleForTesting()
@@ -242,7 +262,7 @@ public class DownloadProcessor {
 
     private DownloadPiece getNextDownloadPiece() {
         synchronized (mDownloadMap) {
-            int maxIndex = mTorrent.getMaxIndex();
+            int maxIndex = mTorrent.getPiecesCounts();
             for (int i = 0; i < maxIndex; i++) {
                 DownloadPiece piece = mDownloadMap.get(i);
                 if (piece.getNextDownloadOffset() >= 0) {
@@ -271,7 +291,7 @@ public class DownloadProcessor {
         DownloadPiece piece = getNextDownloadPiece();
         if (piece == null) {
             if (DEBUG) {
-                Log.e(TAG, "onBitFiled(), Failed to find piece to download. Is finished download ?");
+                Log.e(TAG, "onBitFiled(), Download finished");
             }
             return;
         }
@@ -295,20 +315,29 @@ public class DownloadProcessor {
         @Override
         public void onPiece(@NonNull Peer peer, @NonNull PieceMessage pieceMessage) {
             synchronized (mDownloadMap) {
-                DownloadPiece downloadPiece = mDownloadMap.get(pieceMessage.getPieceIndex());
+                int pieceIndex = pieceMessage.getPieceIndex();
+                DownloadPiece downloadPiece = mDownloadMap.get(pieceIndex);
                 if (downloadPiece == null) {
                     if (DEBUG) {
                         Log.e(TAG, "We got piece message but invalid index !! [" + pieceMessage.getPieceIndex() + "]");
                     }
+
+                    if (mDownloadListener != null) {
+                        mDownloadListener.onDownloadFinished();
+                    }
                     return;
                 }
 
-                int pieceLength = pieceMessage.getBuffer().length;
-                mFileStorage.write(pieceMessage.getBuffer(), pieceMessage.getOffset());
+                int pieceLength = mTorrent.getPieceLength();
+                int downloadLength = pieceMessage.getBuffer().length;
+                long fileOffset = pieceLength * pieceIndex + pieceMessage.getOffset();
+
+                mFileStorage.write(pieceMessage.getBuffer(), fileOffset);
+                downloadPiece.mDownloadLength += downloadLength;
                 if (DEBUG) {
-                    Log.d(TAG, String.format("Write piece %d to %d", pieceMessage.getOffset(), pieceLength));
+                    Log.d(TAG, String.format("Write piece[%d] %d to %d", pieceMessage.getPieceIndex(), fileOffset, fileOffset + downloadLength));
+                    Log.d(TAG, String.format("Remain download length = %d", downloadPiece.getRemainDownloadLength()));
                 }
-                downloadPiece.mDownloadLength += pieceLength;
             }
             executeNextPiece(peer);
         }
@@ -340,6 +369,10 @@ public class DownloadProcessor {
 
         int getRemainDownloadLength() {
             return mPiece.getLength() - mDownloadLength;
+        }
+
+        void setDownloadCompleted() {
+            mDownloadLength = mPiece.getLength();
         }
     }
 }

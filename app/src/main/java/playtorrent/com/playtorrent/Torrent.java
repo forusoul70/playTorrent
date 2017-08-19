@@ -1,12 +1,14 @@
 package playtorrent.com.playtorrent;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.InputStream;
 import java.io.InvalidClassException;
 import java.io.UnsupportedEncodingException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Map;
@@ -19,7 +21,7 @@ public class Torrent {
     private static final boolean DEBUG = BuildConfig.DEBUG;
     private static final String TAG = "Torrent";
 
-    private static final int PIECE_HASH_SIZE = 20;
+    public static final int PIECE_HASH_SIZE = 20;
 
     private byte[] mInfoHash = null;
     private int mFileLength = 0;
@@ -140,8 +142,22 @@ public class Torrent {
         return mPieceLength;
     }
 
-    public int getMaxIndex() {
+    public int getPiecesCounts() {
         return mPieceHashes.capacity() / PIECE_HASH_SIZE;
+    }
+
+    @Nullable
+    public byte[] getPieceHash(int index) throws BufferUnderflowException {
+        // validate index
+        if (index < 0 || index >= getPiecesCounts()) {
+            return null;
+        }
+
+        // read bytes
+        byte[] hash = new byte[PIECE_HASH_SIZE];
+        mPieceHashes.position(index * PIECE_HASH_SIZE);
+        mPieceHashes.get(hash, 0, PIECE_HASH_SIZE);
+        return hash;
     }
 
     @NonNull
